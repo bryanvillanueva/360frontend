@@ -5,6 +5,7 @@ import CreateRecommendedForm from "./components/CreateRecommendedForm";
 import CreateLeaderForm from "./components/CreateLeaderForm";
 import CreateVotanteForm from "./components/CreateVotanteForm";
 import UploadVotantes from "./components/UploadVotantes";
+import VotantesFiltro from "./components/VotantesFiltro";
 import DrawerMenu from "./components/DrawerMenu";
 import "@fontsource/montserrat"; // Estilo regular
 import "@fontsource/montserrat/700.css"; // Estilo bold
@@ -29,6 +30,7 @@ function App() {
             <Route path="/lideres" element={<CreateLeaderForm />} />
             <Route path="/votantes" element={<CreateVotanteForm />} />
             <Route path="/cargarVotantes" element={<UploadVotantes />} />
+            <Route path="/votantesFiltro" element={<VotantesFiltro />} />
           </Routes>
         </div>
       </Router>
