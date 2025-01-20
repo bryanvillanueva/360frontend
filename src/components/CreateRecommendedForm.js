@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, TextField, Typography, CircularProgress, List, ListItem, ListItemText } from "@mui/material";
+import { Box, Button, TextField, Typography, CircularProgress, Grid, Card, CardContent, Typography as CardTypography } from "@mui/material";
 import axios from "axios";
 
 const CreateRecommendedForm = () => {
@@ -57,7 +57,8 @@ const CreateRecommendedForm = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 400, mx: "auto", mt: 5 }}>
+    <Box sx={{ maxWidth: 1400, mx: "auto", mt: 5 }}>
+      <Box sx={{ maxWidth: 600, mx: "auto", mt: 5 }}>
       <Typography variant="h5" gutterBottom>
         Crear Recomendado
       </Typography>
@@ -118,20 +119,27 @@ const CreateRecommendedForm = () => {
           {loading ? <CircularProgress size={24} /> : "Crear"}
         </Button>
       </form>
+      </Box>
 
       <Typography variant="h6" gutterBottom sx={{ mt: 5 }}>
         Lista de Recomendados
       </Typography>
-      <List>
+      <Grid container spacing={2}>
         {recomendados.map((recomendado) => (
-          <ListItem key={recomendado.identificacion}>
-            <ListItemText
-              primary={`${recomendado.nombre} ${recomendado.apellido}`}
-              secondary={`Identificación: ${recomendado.identificacion}`}
-            />
-          </ListItem>
+          <Grid item xs={12} sm={6} md={3} key={recomendado.identificacion}>
+            <Card>
+              <CardContent>
+                <CardTypography variant="h6" component="div">
+                  {`${recomendado.nombre} ${recomendado.apellido}`}
+                </CardTypography>
+                <Typography variant="body2" color="text.secondary">
+                  Identificación: {recomendado.identificacion}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         ))}
-      </List>
+      </Grid>
     </Box>
   );
 };

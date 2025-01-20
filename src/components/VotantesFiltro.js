@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Select,
   MenuItem,
+  Grid,
   Table,
   TableBody,
   TableCell,
@@ -62,20 +63,23 @@ const VotantesFiltro = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", mt: 5 }}>
-      <Typography variant="h5" gutterBottom>
+    <Box
+      sx={{
+        maxWidth: "100%",
+        mx: "auto",
+        mt: { xs: 4, sm: 3 },
+        padding: { xs: 2, sm: 3 },
+        marginLeft: { xs: "0", sm: "0" }, // Solo agregar marginLeft en pantallas medianas y más grandes
+      }}
+    >
+      <Typography variant="h4" gutterBottom>
         Filtro de Votantes
       </Typography>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 2, // Espacio entre elementos
-          mb: 3,
-        }}
-      >
-        <Box sx={{ flex: 1 }}>
+      <Grid container spacing={2} mb={3}>
+        <Grid item xs={12} sm={6}>
+          <Typography variant="h6" gutterBottom>
+            Selecciona un Recomendado
+          </Typography>
           <TextField
             label="Cédula del Recomendado"
             value={recomendadoCedula}
@@ -92,9 +96,9 @@ const VotantesFiltro = () => {
           >
             {loadingLideres ? <CircularProgress size={24} /> : "Buscar Líderes"}
           </Button>
-        </Box>
+        </Grid>
 
-        <Box sx={{ flex: 1 }}>
+        <Grid item xs={12} sm={6}>
           <Typography variant="h6" gutterBottom>
             Selecciona un Líder
           </Typography>
@@ -118,15 +122,15 @@ const VotantesFiltro = () => {
             color="primary"
             onClick={buscarVotantes}
             disabled={loadingVotantes || !liderSeleccionado}
-            sx={{ mt: 2, width: "100%" }}
+            sx={{ mt: 1, width: "100%" }}
           >
             {loadingVotantes ? <CircularProgress size={24} /> : "Ver Votantes"}
           </Button>
-        </Box>
-      </Box>
+        </Grid>
+      </Grid>
 
-      {votantes.length > 0 && (
-        <Box>
+      {votantes.length > 0 ? (
+        <Box> 
           <Typography variant="h6" gutterBottom>
             Lista de Votantes (Total: {votantes.length})
           </Typography>
@@ -155,6 +159,10 @@ const VotantesFiltro = () => {
             </Table>
           </TableContainer>
         </Box>
+      ) : (
+        <Typography variant="body1" color="textSecondary">
+          No hay votantes disponibles.
+        </Typography>
       )}
     </Box>
   );
