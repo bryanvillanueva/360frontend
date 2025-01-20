@@ -1,24 +1,39 @@
 import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import UploadPDF from "./components/UploadPDF";
+import CreateRecommendedForm from "./components/CreateRecommendedForm";
+import CreateLeaderForm from "./components/CreateLeaderForm";
+import CreateVotanteForm from "./components/CreateVotanteForm";
+import UploadVotantes from "./components/UploadVotantes";
+import DrawerMenu from "./components/DrawerMenu";
 import "@fontsource/montserrat"; // Estilo regular
 import "@fontsource/montserrat/700.css"; // Estilo bold
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 
-
 const theme = createTheme({
   typography: {
-      fontFamily: "Montserrat, Arial, sans-serif",
+    fontFamily: "Montserrat, Arial, sans-serif",
   },
 });
 
 function App() {
   return (
-      <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <UploadPDF />
-      </ThemeProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <DrawerMenu />
+        <div style={{ marginLeft: 240, padding: "20px" }}>
+          <Routes>
+            <Route path="/upload" element={<UploadPDF />} />
+            <Route path="/recomendados" element={<CreateRecommendedForm />} />
+            <Route path="/lideres" element={<CreateLeaderForm />} />
+            <Route path="/votantes" element={<CreateVotanteForm />} />
+            <Route path="/cargarVotantes" element={<UploadVotantes />} />
+          </Routes>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 
 export default App;
-
