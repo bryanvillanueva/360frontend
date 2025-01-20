@@ -6,6 +6,8 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import PeopleIcon from "@mui/icons-material/People";
 import MenuIcon from "@mui/icons-material/Menu"; // Ícono del menú (3 líneas)
 import CloseIcon from "@mui/icons-material/Close"; // Ícono de cerrar
+import UploadIcon from '@mui/icons-material/Upload';
+import ListIcon from '@mui/icons-material/List';
 import { styled } from '@mui/system';
 
 // Crear un tema personalizado
@@ -94,7 +96,7 @@ const DrawerMenu = () => {
             <ListItemIconStyled>
               <PictureAsPdfIcon />
             </ListItemIconStyled>
-            <ListItemTextStyled primary="Subir PDF" />
+            <ListItemTextStyled primary="Subir PDF E11" />
           </ListItem>
           <Divider />
 
@@ -108,7 +110,7 @@ const DrawerMenu = () => {
 
           <ListItem button component={Link} to="/lideres">
             <ListItemIconStyled>
-              <PeopleIcon />
+              <PersonAddIcon/>
             </ListItemIconStyled>
             <ListItemTextStyled primary="Crear Líder" />
           </ListItem>
@@ -118,13 +120,13 @@ const DrawerMenu = () => {
             <ListItemIconStyled>
               <PersonAddIcon />
             </ListItemIconStyled>
-            <ListItemTextStyled primary="Crear Votantes" />
+            <ListItemTextStyled primary="Crear Votante" />
           </ListItem>
           <Divider />
 
           <ListItem button component={Link} to="/cargarVotantes">
             <ListItemIconStyled>
-              <PersonAddIcon />
+              <UploadIcon />
             </ListItemIconStyled>
             <ListItemTextStyled primary="Cargar Votantes" />
           </ListItem>
@@ -132,7 +134,7 @@ const DrawerMenu = () => {
 
           <ListItem button component={Link} to="/votantesFiltro">
             <ListItemIconStyled>
-              <PersonAddIcon />
+              <ListIcon />
             </ListItemIconStyled>
             <ListItemTextStyled primary="Ver Lista de Votantes" />
           </ListItem>

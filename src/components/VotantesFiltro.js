@@ -1,13 +1,10 @@
 import React, { useState } from "react";
 import {
   Box,
-  TextField,
   Button,
+  TextField,
   Typography,
   CircularProgress,
-  Select,
-  MenuItem,
-  Grid,
   Table,
   TableBody,
   TableCell,
@@ -15,6 +12,8 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import axios from "axios";
 
@@ -23,6 +22,7 @@ const VotantesFiltro = () => {
   const [lideres, setLideres] = useState([]);
   const [liderSeleccionado, setLiderSeleccionado] = useState("");
   const [votantes, setVotantes] = useState([]);
+  const [liderData, setLiderData] = useState(null);
   const [loadingLideres, setLoadingLideres] = useState(false);
   const [loadingVotantes, setLoadingVotantes] = useState(false);
 
@@ -33,7 +33,9 @@ const VotantesFiltro = () => {
     }
     setLoadingLideres(true);
     try {
-      const response = await axios.get(`http://127.0.0.1:5000/lideres/por-recomendado?recomendado=${recomendadoCedula}`);
+      const response = await axios.get(
+        `http://127.0.0.1:5000/lideres/por-recomendado?recomendado=${recomendadoCedula}`
+      );
       setLideres(response.data || []);
       setLiderSeleccionado("");
       setVotantes([]);
@@ -52,8 +54,19 @@ const VotantesFiltro = () => {
     }
     setLoadingVotantes(true);
     try {
-      const response = await axios.get(`http://127.0.0.1:5000/votantes/por-lider?lider=${liderSeleccionado}`);
-      setVotantes(response.data || []);
+      // Cambiar al nuevo endpoint
+      const response = await axios.get(
+        `http://127.0.0.1:5000/votantes/por-lider-detalle?lider=${liderSeleccionado}`
+      );
+
+      if (response.data.lider) {
+        setLiderData(response.data.lider); // Información del líder
+        setVotantes(response.data.votantes || []); // Lista de votantes (vacía si no hay votantes)
+      } else {
+        alert("No se encontró un líder con esa identificación.");
+        setLiderData(null);
+        setVotantes([]);
+      }
     } catch (error) {
       console.error("Error al buscar votantes:", error);
       alert(error.response?.data?.error || "Error al buscar votantes");
@@ -69,14 +82,13 @@ const VotantesFiltro = () => {
         mx: "auto",
         mt: { xs: 4, sm: 3 },
         padding: { xs: 2, sm: 3 },
-        marginLeft: { xs: "0", sm: "0" }, // Solo agregar marginLeft en pantallas medianas y más grandes
       }}
     >
       <Typography variant="h4" gutterBottom>
         Filtro de Votantes
       </Typography>
-      <Grid container spacing={2} mb={3}>
-        <Grid item xs={12} sm={6}>
+      <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h6" gutterBottom>
             Selecciona un Recomendado
           </Typography>
@@ -96,9 +108,8 @@ const VotantesFiltro = () => {
           >
             {loadingLideres ? <CircularProgress size={24} /> : "Buscar Líderes"}
           </Button>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
+        </Box>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h6" gutterBottom>
             Selecciona un Líder
           </Typography>
@@ -126,43 +137,50 @@ const VotantesFiltro = () => {
           >
             {loadingVotantes ? <CircularProgress size={24} /> : "Ver Votantes"}
           </Button>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
-      {votantes.length > 0 ? (
-        <Box> 
-          <Typography variant="h6" gutterBottom>
-            Lista de Votantes (Total: {votantes.length})
+      {liderData && (
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6">
+            Líder: {`${liderData.nombre} ${liderData.apellido} (Cédula: ${liderData.identificacion})`}
           </Typography>
-          <TableContainer component={Paper}>
+          <Typography variant="h6" sx={{ mt: 1 }}>
+            Cantidad de votantes: {votantes.length}
+          </Typography>
+          <TableContainer component={Paper} sx={{ mt: 3 }}>
             <Table>
               <TableHead>
-                <TableRow>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>Apellido</TableCell>
-                  <TableCell>Cédula</TableCell>
-                  <TableCell>Dirección</TableCell>
-                  <TableCell>Celular</TableCell>
+                <TableRow sx={{fontWeight: '800', backgroundColor: '#1976d2'}}>
+                <TableCell sx={{color: '#ffffff'}}>Cédula</TableCell>
+                  <TableCell sx={{color: '#ffffff'}}>Nombre</TableCell>
+                  <TableCell sx={{color: '#ffffff'}}>Apellido</TableCell>
+                  <TableCell sx={{color: '#ffffff'}}>Dirección</TableCell>
+                  <TableCell sx={{color: '#ffffff'}}>Celular</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {votantes.map((votante) => (
-                  <TableRow key={votante.identificacion}>
-                    <TableCell>{votante.nombre}</TableCell>
-                    <TableCell>{votante.apellido}</TableCell>
-                    <TableCell>{votante.identificacion}</TableCell>
-                    <TableCell>{votante.direccion}</TableCell>
-                    <TableCell>{votante.celular}</TableCell>
+                {votantes.length > 0 ? (
+                  votantes.map((votante) => (
+                    <TableRow key={votante.identificacion}>
+                      <TableCell>{votante.identificacion}</TableCell>
+                      <TableCell>{votante.nombre}</TableCell>
+                      <TableCell>{votante.apellido}</TableCell>
+                      <TableCell>{votante.direccion}</TableCell>
+                      <TableCell>{votante.celular}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      No hay votantes asignados a este líder.
+                    </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </TableContainer>
         </Box>
-      ) : (
-        <Typography variant="body1" color="textSecondary">
-          No hay votantes disponibles.
-        </Typography>
       )}
     </Box>
   );
