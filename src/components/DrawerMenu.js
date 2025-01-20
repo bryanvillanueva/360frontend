@@ -43,6 +43,13 @@ const DrawerMenu = () => {
           <ListItemText primary="Cargar Votantes" />
         </ListItem>
         <Divider />
+        <ListItem button component={Link} to="/votantesFiltro">
+          <ListItemIcon>
+            <PersonAddIcon />
+          </ListItemIcon>
+          <ListItemText primary="Ver Lista de Votantes" />
+        </ListItem>
+        <Divider />
       </List>
     </Drawer>
   );
