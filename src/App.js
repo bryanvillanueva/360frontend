@@ -9,7 +9,7 @@ import VotantesFiltro from "./components/VotantesFiltro";
 import DrawerMenu from "./components/DrawerMenu";
 import "@fontsource/montserrat"; // Estilo regular
 import "@fontsource/montserrat/700.css"; // Estilo bold
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import { CssBaseline, ThemeProvider, createTheme, Box } from "@mui/material";
 
 const theme = createTheme({
   typography: {
@@ -23,7 +23,15 @@ function App() {
       <CssBaseline />
       <Router>
         <DrawerMenu />
-        <div style={{ marginLeft: 240, padding: "20px" }}>
+        <Box
+          sx={{
+            padding: "20px",
+            marginLeft: 30, // Default margin for desktop
+            "@media (max-width: 600px)": {
+              marginLeft: 0, // Remove margin for mobile screens
+            },
+          }}
+        >
           <Routes>
             <Route path="/upload" element={<UploadPDF />} />
             <Route path="/recomendados" element={<CreateRecommendedForm />} />
@@ -32,7 +40,7 @@ function App() {
             <Route path="/cargarVotantes" element={<UploadVotantes />} />
             <Route path="/votantesFiltro" element={<VotantesFiltro />} />
           </Routes>
-        </div>
+        </Box>
       </Router>
     </ThemeProvider>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Button, Typography, TextField, CircularProgress } from "@mui/material";
+import { Box, Button, Typography, CircularProgress, Card, CardContent, Paper } from "@mui/material";
 import axios from "axios";
 
 const UploadVotantes = () => {
@@ -34,25 +34,67 @@ const UploadVotantes = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 400, mx: "auto", mt: 5 }}>
-      <Typography variant="h5" gutterBottom>
-        Cargar Votantes
-      </Typography>
-      <input
-        type="file"
-        accept=".xls, .xlsx" // Permitir solo archivos Excel
-        onChange={handleFileChange}
-        style={{ marginBottom: "20px" }}
-      />
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleUpload}
-        disabled={loading}
-        sx={{ width: "100%" }}
-      >
-        {loading ? <CircularProgress size={24} /> : "Subir"}
-      </Button>
+    <Box sx={{ maxWidth: 600, mx: "auto", mt: 5 }}>
+      <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
+        <CardContent>
+          <Typography variant="h5" align="center" gutterBottom>
+            Cargar Votantes
+          </Typography>
+
+          <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 2 }}>
+            Suba un archivo Excel (.xls, .xlsx) con la información de los votantes
+          </Typography>
+
+          <Paper
+            sx={{
+              padding: 2,
+              textAlign: "center",
+              border: "2px dashed #1976d2",
+              borderRadius: 1,
+              mb: 3,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: 100,
+              position: "relative",  
+            }}
+          >
+            <input
+              type="file"
+              accept=".xls, .xlsx"
+              onChange={handleFileChange}
+              style={{
+                position: "absolute",  
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                opacity: 0, 
+                cursor: "pointer", 
+              }}
+            />
+            {!file ? (
+              <Typography variant="body2" color="text.secondary">
+                Arrastra un archivo o haz clic para seleccionar
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="text.primary">
+                {file.name}
+              </Typography>
+            )}
+          </Paper>
+
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleUpload}
+            disabled={loading}
+            sx={{ width: "100%" }}
+          >
+            {loading ? <CircularProgress size={24} /> : "Subir"}
+          </Button>
+        </CardContent>
+      </Card>
     </Box>
   );
 };

@@ -5,9 +5,8 @@ import {
     Button,
     CircularProgress,
     Typography,
-    TextField,
     Container,
-    Grid,
+    Paper,
 } from "@mui/material";
 
 const UploadPDF = () => {
@@ -52,57 +51,86 @@ const UploadPDF = () => {
 
     return (
         <Container maxWidth="sm">
-            <Typography variant="h4" gutterBottom align="center" sx={{ mt: 4, marginBottom: '30px', marginTop: '80px'  }}>
-                Procesar PDF
-            </Typography>
-            <form onSubmit={handleSubmit}>
-                <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-                    <TextField
-                        type="file"
-                        inputProps={{ accept: "application/pdf" }}
-                        onChange={handleFileChange}
-                        fullWidth
-                    />
+            <Paper sx={{ padding: 4, borderRadius: 2, boxShadow: 3, marginTop: "50px" }}>
+                <Typography variant="h4" gutterBottom align="center" sx={{ mb: 3 }}>
+                    Procesar PDF E11
+                </Typography>
+
+                <form onSubmit={handleSubmit}>
+                    <Box
+                        sx={{
+                            border: "2px dashed #1976d2",
+                            borderRadius: 2,
+                            padding: 3,
+                            textAlign: "center",
+                            cursor: "pointer",
+                            backgroundColor: "#f9f9f9",
+                            transition: "background-color 0.2s",
+                            '&:hover': {
+                                backgroundColor: "#e3f2fd",
+                            },
+                        }}
+                        onClick={() => document.getElementById("fileInput").click()}
+                    >
+                        <input
+                            id="fileInput"
+                            type="file"
+                            accept="application/pdf"
+                            onChange={handleFileChange}
+                            style={{ display: "none" }}
+                        />
+                        <Typography>
+                            {file ? file.name : "Arrastra un archivo PDF o haz clic para seleccionar"}
+                        </Typography>
+                    </Box>
+
                     <Button
                         variant="contained"
                         color="primary"
                         type="submit"
                         fullWidth
-                        sx={{ fontWeight: "bold"}}
+                        sx={{
+                            fontWeight: "bold",
+                            padding: "12px",
+                            textTransform: "none",
+                            borderRadius: 1,
+                            mt: 3,
+                        }}
+                        disabled={loading}
                     >
-                        Procesar PDF
+                        {loading ? <CircularProgress size={24} /> : "Procesar PDF"}
                     </Button>
-                </Box>
-            </form>
+                </form>
 
-            {/* Loader */}
-            {loading && (
-                <Box display="flex" justifyContent="center" alignItems="center" sx={{ mt: 4 }}>
-                    <CircularProgress />
-                </Box>
-            )}
+                {/* Loader */}
+                {loading && (
+                    <Box display="flex" justifyContent="center" alignItems="center" sx={{ mt: 4 }}>
+                        <CircularProgress />
+                    </Box>
+                )}
 
-            {/* Error */}
-            {error && (
-                <Typography color="error" sx={{ mt: 2 }} align="center">
-                    {error}
-                </Typography>
-            )}
+                {/* Error */}
+                {error && (
+                    <Typography color="error" sx={{ mt: 2 }} align="center">
+                        {error}
+                    </Typography>
+                )}
 
-            {/* Resultados */}
-            {results && (
-                <Box sx={{ mt: 4 }}>
-                    <Typography variant="h6" gutterBottom>
-                        Resultados:
-                    </Typography>
-                    <Typography>
-                        <strong>Total de campos extraídos:</strong> {results.total_count}
-                    </Typography>
-                    <Typography component="pre" sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
-                        {results.highlighted_text}
-                    </Typography>
-                </Box>
-            )}
+                {/* Resultados */}
+                {results && (
+                    <Box sx={{ mt: 4 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Resultados:
+                        </Typography>
+                        <Typography>
+                            <strong>Total de campos extraídos:</strong> {results.total_count}
+                        </Typography>
+                        <Typography component="pre" sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
+                            {results.highlighted_text}
+                        </Typography>
+                    </Box>
+                )}
+            </Paper>
         </Container>
     );
 };
