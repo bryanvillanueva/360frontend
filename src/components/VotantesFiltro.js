@@ -23,6 +23,7 @@ const VotantesFiltro = () => {
   const [liderSeleccionado, setLiderSeleccionado] = useState("");
   const [votantes, setVotantes] = useState([]);
   const [liderData, setLiderData] = useState(null);
+  const [recomendadoInfo, setRecomendadoInfo] = useState(null);
   const [loadingLideres, setLoadingLideres] = useState(false);
   const [loadingVotantes, setLoadingVotantes] = useState(false);
 
@@ -39,6 +40,8 @@ const VotantesFiltro = () => {
       setLideres(response.data || []);
       setLiderSeleccionado("");
       setVotantes([]);
+      setLiderData(null);
+      setRecomendadoInfo(null);
     } catch (error) {
       console.error("Error al buscar líderes:", error);
       alert(error.response?.data?.error || "Error al buscar líderes");
@@ -54,18 +57,31 @@ const VotantesFiltro = () => {
     }
     setLoadingVotantes(true);
     try {
-      // Cambiar al nuevo endpoint
       const response = await axios.get(
         `http://127.0.0.1:5000/votantes/por-lider-detalle?lider=${liderSeleccionado}`
       );
-
       if (response.data.lider) {
-        setLiderData(response.data.lider); // Información del líder
-        setVotantes(response.data.votantes || []); // Lista de votantes (vacía si no hay votantes)
+        setLiderData(response.data.lider);
+        setVotantes(response.data.votantes || []);
+        // Si el líder tiene recomendado, obtener su info
+        if (response.data.lider.recomendado_identificacion) {
+          try {
+            const recRes = await axios.get(
+              `http://127.0.0.1:5000/recomendados/${response.data.lider.recomendado_identificacion}`
+            );
+            setRecomendadoInfo(recRes.data);
+          } catch (recError) {
+            console.error("Error al obtener info del recomendado:", recError);
+            setRecomendadoInfo(null);
+          }
+        } else {
+          setRecomendadoInfo(null);
+        }
       } else {
         alert("No se encontró un líder con esa identificación.");
         setLiderData(null);
         setVotantes([]);
+        setRecomendadoInfo(null);
       }
     } catch (error) {
       console.error("Error al buscar votantes:", error);
@@ -81,7 +97,7 @@ const VotantesFiltro = () => {
         maxWidth: "100%",
         mx: "auto",
         mt: { xs: 4, sm: 3 },
-        padding: { xs: 2, sm: 3 },
+        p: { xs: 2, sm: 3 },
       }}
     >
       <Typography variant="h4" gutterBottom>
@@ -123,7 +139,10 @@ const VotantesFiltro = () => {
               -- Selecciona un líder --
             </MenuItem>
             {lideres.map((lider) => (
-              <MenuItem key={lider.lider_identificacion} value={lider.lider_identificacion}>
+              <MenuItem
+                key={lider.lider_identificacion}
+                value={lider.lider_identificacion}
+              >
                 {`${lider.lider_nombre || "Nombre no disponible"} ${lider.lider_apellido || "Apellido no disponible"} (Cédula: ${lider.lider_identificacion || "Sin identificación"})`}
               </MenuItem>
             ))}
@@ -145,27 +164,32 @@ const VotantesFiltro = () => {
           <Typography variant="h6">
             Líder: {`${liderData.nombre} ${liderData.apellido} (Cédula: ${liderData.identificacion})`}
           </Typography>
+          {recomendadoInfo && (
+            <Typography variant="h6" sx={{ mt: 1 }}>
+              Recomendado: {`${recomendadoInfo.nombre} ${recomendadoInfo.apellido} (Cédula: ${recomendadoInfo.identificacion})`}
+            </Typography>
+          )}
           <Typography variant="h6" sx={{ mt: 1 }}>
             Cantidad de votantes: {votantes.length}
           </Typography>
           <TableContainer component={Paper} sx={{ mt: 3 }}>
             <Table>
               <TableHead>
-                <TableRow sx={{fontWeight: '800', backgroundColor: '#1976d2'}}>
-                <TableCell sx={{color: '#ffffff'}}>Cédula</TableCell>
-                  <TableCell sx={{color: '#ffffff'}}>Nombre</TableCell>
-                  <TableCell sx={{color: '#ffffff'}}>Apellido</TableCell>
-                  <TableCell sx={{color: '#ffffff'}}>Dirección</TableCell>
-                  <TableCell sx={{color: '#ffffff'}}>Celular</TableCell>
+                <TableRow sx={{ fontWeight: "800", backgroundColor: "#1976d2" }}>
+                  <TableCell sx={{ color: "#ffffff" }}>Cédula</TableCell>
+                  <TableCell sx={{ color: "#ffffff" }}>Nombre</TableCell>
+                  <TableCell sx={{ color: "#ffffff" }}>Apellido</TableCell>
+                  <TableCell sx={{ color: "#ffffff" }}>Dirección</TableCell>
+                  <TableCell sx={{ color: "#ffffff" }}>Celular</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {votantes.length > 0 ? (
                   votantes.map((votante) => (
-                    <TableRow key={votante.identificacion}>
-                      <TableCell>{votante.identificacion}</TableCell>
-                      <TableCell>{votante.nombre}</TableCell>
-                      <TableCell>{votante.apellido}</TableCell>
+                    <TableRow key={votante.votante_identificacion}>
+                      <TableCell>{votante.votante_identificacion}</TableCell>
+                      <TableCell>{votante.votante_nombre}</TableCell>
+                      <TableCell>{votante.votante_apellido}</TableCell>
                       <TableCell>{votante.direccion}</TableCell>
                       <TableCell>{votante.celular}</TableCell>
                     </TableRow>
