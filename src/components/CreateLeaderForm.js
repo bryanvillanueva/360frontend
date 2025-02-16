@@ -209,7 +209,9 @@ const CreateLeaderForm = () => {
 
   // --- Manejo de edición de líder ---
   const handleOpenLeaderEditModal = (leader) => {
+    // Guardamos el id original en 'original_identificacion'
     setLeaderEditData({
+      original_identificacion: leader.lider_identificacion,
       identificacion: leader.lider_identificacion,
       nombre: leader.lider_nombre,
       apellido: leader.lider_apellido,
@@ -234,7 +236,11 @@ const CreateLeaderForm = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.put(`http://127.0.0.1:5000/lideres/${leaderEditData.identificacion}`, leaderEditData);
+      // Utilizamos el id original para la actualización en la URL
+      await axios.put(
+        `http://127.0.0.1:5000/lideres/${leaderEditData.original_identificacion}`,
+        leaderEditData
+      );
       alert("Líder actualizado con éxito");
       setLeaderEditModalOpen(false);
       setLeaderEditData(null);
@@ -251,11 +257,10 @@ const CreateLeaderForm = () => {
   const handleOpenLeaderDeleteModal = async (leader) => {
     setLeaderDeleteTarget(leader);
     try {
-      // Usar el endpoint de detalle para obtener votantes asociados
+      // Obtener votantes asociados al líder
       const response = await axios.get(
         `http://127.0.0.1:5000/votantes/por-lider-detalle?lider=${leader.lider_identificacion}`
       );
-      // Se espera que retorne {lider: {...}, votantes: [...]}
       setVotersAffected(response.data.votantes || []);
     } catch (error) {
       console.error("Error al obtener votantes asociados:", error);
@@ -530,7 +535,7 @@ const CreateLeaderForm = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Modal: Intento de crear líder sin recomendado */}
+        {/* Modal: Líder sin Recomendado */}
         <Dialog open={leaderWithoutRecommendedModalOpen} onClose={() => setLeaderWithoutRecommendedModalOpen(false)}>
           <DialogTitle>Líder sin Recomendado</DialogTitle>
           <DialogContent>
@@ -564,7 +569,7 @@ const CreateLeaderForm = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Modal: Formulario para crear recomendado (desde opción "Cancelar y Crear Recomendado") */}
+        {/* Modal: Formulario para crear recomendado (opción "Cancelar y Crear Recomendado") */}
         <Dialog open={createRecommendedModalOpen} onClose={() => setCreateRecommendedModalOpen(false)}>
           <DialogTitle>Crear Recomendado</DialogTitle>
           <DialogContent>
@@ -628,14 +633,20 @@ const CreateLeaderForm = () => {
           <DialogContent>
             {leaderEditData && (
               <Box component="form" onSubmit={handleLeaderEditSubmit}>
+                {/* Campo oculto para el id original */}
+                <input
+                  type="hidden"
+                  name="original_identificacion"
+                  value={leaderEditData.original_identificacion}
+                />
                 <TextField
                   label="Identificación"
                   name="identificacion"
                   value={leaderEditData.identificacion}
+                  onChange={handleLeaderEditChange}
                   fullWidth
                   required
                   sx={{ mb: 2, mt: 2 }}
-                  disabled
                 />
                 <TextField
                   label="Nombre"
@@ -698,7 +709,8 @@ const CreateLeaderForm = () => {
             {leaderDeleteTarget && (
               <>
                 <Typography variant="body1" sx={{ mb: 2 }}>
-                  ¿Estás seguro de que deseas eliminar el líder con identificación <strong>{leaderDeleteTarget.lider_identificacion}</strong>? Esta acción no se puede deshacer.
+                  ¿Estás seguro de que deseas eliminar el líder con identificación{" "}
+                  <strong>{leaderDeleteTarget.lider_identificacion}</strong>? Esta acción no se puede deshacer.
                 </Typography>
                 {votersAffected.length > 0 && (
                   <>

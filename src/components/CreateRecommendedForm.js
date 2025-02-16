@@ -35,6 +35,7 @@ const RecommendedManagement = () => {
     apellido: "",
     celular: "",
     email: "",
+    original_identificacion: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -83,6 +84,7 @@ const RecommendedManagement = () => {
       apellido: "",
       celular: "",
       email: "",
+      original_identificacion: "",
     });
     setModalOpen(true);
   };
@@ -90,7 +92,10 @@ const RecommendedManagement = () => {
   // Abrir modal para editar un recomendado
   const handleOpenEditModal = (recomendado) => {
     setIsEditing(true);
-    setFormData(recomendado);
+    setFormData({
+      ...recomendado,
+      original_identificacion: recomendado.identificacion, // Guardamos el valor original
+    });
     setModalOpen(true);
   };
 
@@ -111,9 +116,9 @@ const RecommendedManagement = () => {
     setLoading(true);
     try {
       if (isEditing) {
-        // Actualizar recomendado
+        // Actualizar recomendado usando el original_identificacion para la verificación
         await axios.put(
-          `http://127.0.0.1:5000/recomendados/${formData.identificacion}`,
+          `http://127.0.0.1:5000/recomendados/${formData.original_identificacion}`,
           formData
         );
         alert("Recomendado actualizado con éxito");
@@ -175,7 +180,7 @@ const RecommendedManagement = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: '100%', mx: "auto", mt: 1, p: 1   }}>
+    <Box sx={{ maxWidth: "100%", mx: "auto", mt: 1, p: 1 }}>
       {/* Encabezado: Título y descripción con estilos */}
       <Box
         sx={{
@@ -218,10 +223,10 @@ const RecommendedManagement = () => {
         <Button
           variant="contained"
           onClick={handleOpenCreateModal}
-          sx={{ 
+          sx={{
             whiteSpace: "nowrap",
             minWidth: "400px",
-            gap: 1
+            gap: 1,
           }}
           startIcon={<Add />}
         >
@@ -294,7 +299,12 @@ const RecommendedManagement = () => {
               fullWidth
               required
               sx={{ mb: 2, mt: 2 }}
-              disabled={isEditing}
+            />
+            {/* Campo oculto para conservar el valor original */}
+            <input
+              type="hidden"
+              name="original_identificacion"
+              value={formData.original_identificacion}
             />
             <TextField
               label="Nombre"
@@ -374,9 +384,6 @@ const RecommendedManagement = () => {
                       </li>
                     ))}
                   </ul>
-                  <Typography variant="body2" sx={{ mt: 2 }}>
-                    Deberás actualizar el campo de "recomendado" para estos líderes después de eliminar.
-                  </Typography>
                 </>
               ) : (
                 <Typography variant="body2" sx={{ mb: 2 }}>
