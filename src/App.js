@@ -7,9 +7,10 @@ import CreateVotanteForm from "./components/CreateVotanteForm";
 import UploadVotantes from "./components/UploadVotantes";
 import VotantesFiltro from "./components/VotantesFiltro";
 import DrawerMenu from "./components/DrawerMenu";
+import Dashboard from "./components/Dashboard";
+import { CssBaseline, ThemeProvider, createTheme, Box } from "@mui/material";
 import "@fontsource/montserrat"; // Estilo regular
 import "@fontsource/montserrat/700.css"; // Estilo bold
-import { CssBaseline, ThemeProvider, createTheme, Box } from "@mui/material";
 
 const theme = createTheme({
   typography: {
@@ -22,23 +23,35 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
+        {/* DrawerMenu debe actualizarse para mostrar los grupos: Dashboard, Crear, Cargas y Filtros/Reportes */}
         <DrawerMenu />
         <Box
           sx={{
             padding: "20px",
-            marginLeft: 30, // Default margin for desktop
+            marginLeft: 30, // margen para desktop
             "@media (max-width: 600px)": {
-              marginLeft: 0, // Remove margin for mobile screens
+              marginLeft: 0, // sin margen en mobile
             },
           }}
         >
           <Routes>
-            <Route path="/upload" element={<UploadPDF />} />
-            <Route path="/recomendados" element={<CreateRecommendedForm />} />
-            <Route path="/lideres" element={<CreateLeaderForm />} />
-            <Route path="/votantes" element={<CreateVotanteForm />} />
-            <Route path="/cargarVotantes" element={<UploadVotantes />} />
-            <Route path="/votantesFiltro" element={<VotantesFiltro />} />
+            {/* Dashboard */}
+            <Route path="/" element={<Dashboard/>} />
+
+            {/* Grupo "Crear" */}
+            <Route path="/crear/recomendados" element={<CreateRecommendedForm />} />
+            <Route path="/crear/lideres" element={<CreateLeaderForm />} />
+            <Route path="/crear/votantes" element={<CreateVotanteForm />} />
+
+            {/* Grupo "Cargas" */}
+            {/* Nota: Los módulos de "Cargar recomendados" y "Cargar líderes" se desarrollarán posteriormente */}
+            <Route path="/cargas/recomendados" element={<div>Cargar Recomendados (Pendiente)</div>} />
+            <Route path="/cargas/lideres" element={<div>Cargar Líderes (Pendiente)</div>} />
+            <Route path="/cargas/votantes" element={<UploadVotantes />} />
+
+            {/* Grupo "Filtros y Reportes" */}
+            <Route path="/filtros/votantes" element={<VotantesFiltro />} />
+            <Route path="/filtros/pdf" element={<UploadPDF />} />
           </Routes>
         </Box>
       </Router>
