@@ -1,34 +1,50 @@
 import React, { useState } from "react";
-import { Drawer, List, ListItem, ListItemText, ListItemIcon, Divider, Typography, CssBaseline, ThemeProvider, createTheme, IconButton } from "@mui/material";
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Typography,
+  CssBaseline,
+  ThemeProvider,
+  createTheme,
+  IconButton,
+  ListSubheader,
+  Collapse,
+} from "@mui/material";
 import { Link } from "react-router-dom";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import PeopleIcon from "@mui/icons-material/People";
-import MenuIcon from "@mui/icons-material/Menu"; // Ícono del menú (3 líneas)
-import CloseIcon from "@mui/icons-material/Close"; // Ícono de cerrar
-import UploadIcon from '@mui/icons-material/Upload';
-import ListIcon from '@mui/icons-material/List';
-import { styled } from '@mui/system';
+import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
+import UploadIcon from "@mui/icons-material/Upload";
+import ListIcon from "@mui/icons-material/List";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import { styled } from "@mui/system";
 
-// Crear un tema personalizado
+// Tema personalizado
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',  // color principal (puedes cambiar este color)
+      main: "#1976d2",
     },
     secondary: {
-      main: '#03e8ff61',  // color secundario (puedes cambiar este color)
+      main: "#03e8ff61",
     },
   },
   typography: {
-    fontFamily: 'Arial, sans-serif',
+    fontFamily: "Montserrat, Arial, sans-serif",
     h6: {
-      fontWeight: 'bold',
+      fontWeight: "bold",
     },
   },
 });
 
-// Estilo del Drawer
+// Estilos para el Drawer fijo
 const DrawerContainer = styled(Drawer)(({ theme }) => ({
   width: 240,
   flexShrink: 0,
@@ -36,25 +52,24 @@ const DrawerContainer = styled(Drawer)(({ theme }) => ({
     width: 240,
     backgroundColor: theme.palette.primary.main,
     color: theme.palette.primary.contrastText,
-    border: 'none', // Sin borde adicional
+    border: "none",
   },
 }));
 
 // Estilo del logo
-const LogoContainer = styled('div')(({ theme }) => ({
+const LogoContainer = styled("div")(({ theme }) => ({
   padding: theme.spacing(2),
-  textAlign: 'center',
+  textAlign: "center",
   backgroundColor: theme.palette.secondary.main,
 }));
 
-// Estilo del texto del logo
 const LogoText = styled(Typography)(({ theme }) => ({
-  fontSize: '1.5rem',
+  fontSize: "1.5rem",
   color: theme.palette.primary.contrastText,
-  fontWeight: 'bold',
+  fontWeight: "bold",
 }));
 
-// Estilo de los elementos de la lista
+// Estilos para los elementos de la lista
 const ListItemTextStyled = styled(ListItemText)(({ theme }) => ({
   color: theme.palette.primary.contrastText,
 }));
@@ -64,171 +79,186 @@ const ListItemIconStyled = styled(ListItemIcon)(({ theme }) => ({
 }));
 
 const DrawerMenu = () => {
-  const [open, setOpen] = useState(false);  // Estado para abrir/cerrar el Drawer en móviles
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [openCrear, setOpenCrear] = useState(false);
+  const [openCargas, setOpenCargas] = useState(false);
+  const [openFiltros, setOpenFiltros] = useState(false);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const drawerContent = (
+    <>
+      <LogoContainer>
+        <LogoText>SOFT 360</LogoText>
+      </LogoContainer>
+      <List>
+        {/* Dashboard */}
+        <ListItem button component={Link} to="/">
+          <ListItemIconStyled>
+            <PeopleIcon />
+          </ListItemIconStyled>
+          <ListItemTextStyled primary="Dashboard" />
+        </ListItem>
+        <Divider />
+
+        {/* Grupo "Crear" */}
+        <ListItem button onClick={() => setOpenCrear(!openCrear)}>
+          <ListItemTextStyled primary="Crear" />
+          {openCrear ? <ExpandLess /> : <ExpandMore />}
+        </ListItem>
+        <Collapse in={openCrear} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            <ListItem
+              button
+              component={Link}
+              to="/crear/recomendados"
+              sx={{ pl: 4 }}
+            >
+              <ListItemIconStyled>
+                <PersonAddIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Crear Recomendado" />
+            </ListItem>
+            <ListItem
+              button
+              component={Link}
+              to="/crear/lideres"
+              sx={{ pl: 4 }}
+            >
+              <ListItemIconStyled>
+                <PersonAddIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Crear Líder" />
+            </ListItem>
+            <ListItem
+              button
+              component={Link}
+              to="/crear/votantes"
+              sx={{ pl: 4 }}
+            >
+              <ListItemIconStyled>
+                <PersonAddIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Crear Votante" />
+            </ListItem>
+          </List>
+        </Collapse>
+        <Divider />
+
+        {/* Grupo "Cargas" */}
+        <ListItem button onClick={() => setOpenCargas(!openCargas)}>
+          <ListItemTextStyled primary="Cargas" />
+          {openCargas ? <ExpandLess /> : <ExpandMore />}
+        </ListItem>
+        <Collapse in={openCargas} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {/* Los siguientes módulos se desarrollarán posteriormente */}
+            <ListItem button sx={{ pl: 4 }} component={Link} to="/cargas/recomendados">
+              <ListItemIconStyled>
+                <UploadIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Cargar Recomendados" />
+            </ListItem>
+            <ListItem button sx={{ pl: 4 }} component={Link} to="/cargas/lideres">
+              <ListItemIconStyled>
+                <UploadIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Cargar Líderes" />
+            </ListItem>
+            <ListItem button sx={{ pl: 4 }} component={Link} to="/cargas/votantes">
+              <ListItemIconStyled>
+                <UploadIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Cargar Votantes" />
+            </ListItem>
+          </List>
+        </Collapse>
+        <Divider />
+
+        {/* Grupo "Filtros y Reportes" */}
+        <ListItem button onClick={() => setOpenFiltros(!openFiltros)}>
+          <ListItemTextStyled primary="Filtros y Reportes" />
+          {openFiltros ? <ExpandLess /> : <ExpandMore />}
+        </ListItem>
+        <Collapse in={openFiltros} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            <ListItem button sx={{ pl: 4 }} component={Link} to="/filtros/votantes">
+              <ListItemIconStyled>
+                <ListIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Ver Lista de Votantes" />
+            </ListItem>
+            <ListItem button sx={{ pl: 4 }} component={Link} to="/filtros/pdf">
+              <ListItemIconStyled>
+                <PictureAsPdfIcon />
+              </ListItemIconStyled>
+              <ListItemTextStyled primary="Subir PDF E11" />
+            </ListItem>
+          </List>
+        </Collapse>
+        <Divider />
+      </List>
+    </>
+  );
 
   return (
     <ThemeProvider theme={theme}>
-      {/* CssBaseline aplica el tema global y normaliza los estilos */}
       <CssBaseline />
-      
-      {/* Botón de menú para pantallas pequeñas */}
-      <IconButton 
-        onClick={() => setOpen(true)} 
-        sx={{ display: { xs: 'block', sm: 'none' }, position: 'absolute', top: 16, left: 16 }}
-      >
-        <MenuIcon />
-      </IconButton>
-
+      {/* Drawer fijo para escritorio */}
       <DrawerContainer
-        variant="permanent" // Este es el comportamiento por defecto (fijo en escritorio)
+        variant="permanent"
         anchor="left"
         sx={{
-          display: { xs: "none", sm: "block" }, // Fijo en pantallas grandes
+          display: { xs: "none", sm: "block" },
         }}
       >
-        {/* Logo o Título del Drawer */}
-        <LogoContainer>
-          <LogoText>SOFT 360</LogoText>
-        </LogoContainer>
-
-        <List>
-          <ListItem button component={Link} to="/upload">
-            <ListItemIconStyled>
-              <PictureAsPdfIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Subir PDF E11" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/recomendados">
-            <ListItemIconStyled>
-              <PersonAddIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Crear Recomendado" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/lideres">
-            <ListItemIconStyled>
-              <PersonAddIcon/>
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Crear Líder" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/votantes">
-            <ListItemIconStyled>
-              <PersonAddIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Crear Votante" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/cargarVotantes">
-            <ListItemIconStyled>
-              <UploadIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Cargar Votantes" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/votantesFiltro">
-            <ListItemIconStyled>
-              <ListIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Ver Lista de Votantes" />
-          </ListItem>
-          <Divider />
-        </List>
+        {drawerContent}
       </DrawerContainer>
-
-
-      {/* Drawer Responsivo para móviles */}
+      {/* Drawer temporal para móviles */}
       <Drawer
-        variant="temporary" // Variará al modo temporal para móviles
-        open={open}
-        onClose={() => setOpen(false)}
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
         ModalProps={{
-          keepMounted: true, // Ayuda a la transición en dispositivos móviles
+          keepMounted: true,
         }}
         sx={{
-          display: { xs: "block", sm: "none" }, // Aparece solo en pantallas pequeñas
+          display: { xs: "block", sm: "none" },
           "& .MuiDrawer-paper": {
-            backgroundColor: theme.palette.primary.main, // Mantener el mismo color de fondo
-            color: theme.palette.primary.contrastText, // Mantener el mismo color de texto
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
             paddingTop: theme.spacing(2),
           },
         }}
       >
-        {/* Cerrar ícono (X) fuera del Drawer flotando en la esquina derecha */}
-        <IconButton 
-          onClick={() => setOpen(false)} 
-          sx={{ 
-            position: 'fixed', 
-            top: 16, 
-            right: 16, 
+        <IconButton
+          onClick={handleDrawerToggle}
+          sx={{
+            position: "fixed",
+            top: 16,
+            right: 16,
             color: theme.palette.primary.contrastText,
-            zIndex: 1201, // Para asegurarse de que esté sobre el Drawer
+            zIndex: 1201,
           }}
         >
           <CloseIcon />
         </IconButton>
-
-        {/* Logo del Drawer en la versión móvil */}
-        <LogoContainer>
-          <LogoText>SOFT-360</LogoText>
-        </LogoContainer>
-
-        <List>
-          <ListItem button component={Link} to="/upload">
-            <ListItemIconStyled>
-              <PictureAsPdfIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Subir PDF" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/recomendados">
-            <ListItemIconStyled>
-              <PersonAddIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Crear Recomendado" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/lideres">
-            <ListItemIconStyled>
-              <PeopleIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Crear Líder" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/votantes">
-            <ListItemIconStyled>
-              <PersonAddIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Crear Votantes" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/cargarVotantes">
-            <ListItemIconStyled>
-              <PersonAddIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Cargar Votantes" />
-          </ListItem>
-          <Divider />
-
-          <ListItem button component={Link} to="/votantesFiltro">
-            <ListItemIconStyled>
-              <PersonAddIcon />
-            </ListItemIconStyled>
-            <ListItemTextStyled primary="Ver Lista de Votantes" />
-          </ListItem>
-          <Divider />
-        </List>
+        {drawerContent}
       </Drawer>
+      {/* Botón de menú para móviles */}
+      <IconButton
+        onClick={handleDrawerToggle}
+        sx={{
+          display: { xs: "block", sm: "none" },
+          position: "absolute",
+          top: 16,
+          left: 16,
+        }}
+      >
+        <MenuIcon />
+      </IconButton>
     </ThemeProvider>
   );
 };

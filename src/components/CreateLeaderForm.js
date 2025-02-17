@@ -28,7 +28,8 @@ const CreateLeaderForm = () => {
     apellido: "",
     celular: "",
     email: "",
-    recomendado_identificacion: "",
+    recomendado_identificacion: "", // Este campo ya no es requerido
+    objetivo: "", // nuevo campo (opcional)
   });
   const [loading, setLoading] = useState(false);
   const [recomendadoData, setRecomendadoData] = useState(null);
@@ -89,7 +90,8 @@ const CreateLeaderForm = () => {
   // Buscar datos del recomendado
   const handleBuscarRecomendado = async () => {
     if (!formData.recomendado_identificacion) {
-      alert("Por favor, ingresa la identificación del recomendado.");
+      // Si se deja vacío, no se hace la búsqueda y se deja el modal para elegir opciones
+      setLeaderWithoutRecommendedModalOpen(true);
       return;
     }
     setLoading(true);
@@ -133,7 +135,9 @@ const CreateLeaderForm = () => {
   // Manejar el envío del formulario de líder
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!recomendadoData) {
+    // Si no hay recomendadoData y el campo recomendado_identificacion está vacío,
+    // se abre el modal para elegir opción de autorecomendado o crear uno
+    if (!recomendadoData && !formData.recomendado_identificacion) {
       setLeaderWithoutRecommendedModalOpen(true);
       return;
     }
@@ -148,6 +152,7 @@ const CreateLeaderForm = () => {
         celular: "",
         email: "",
         recomendado_identificacion: "",
+        objetivo: "",
       });
       setRecomendadoData(null);
       fetchLeaders();
@@ -182,6 +187,7 @@ const CreateLeaderForm = () => {
         celular: "",
         email: "",
         recomendado_identificacion: "",
+        objetivo: "",
       });
       setRecomendadoData(null);
       fetchLeaders();
@@ -218,6 +224,7 @@ const CreateLeaderForm = () => {
       celular: leader.lider_celular,
       email: leader.lider_email,
       recomendado_identificacion: leader.recomendado_identificacion || "",
+      objetivo: leader.lider_objetivo || "", // asignar valor del objetivo
     });
     setLeaderEditModalOpen(true);
   };
@@ -295,15 +302,15 @@ const CreateLeaderForm = () => {
   return (
     <Box>
       {/* Barra superior */}
-      <Box 
-        sx={{ 
-          width: '100%', 
-          backgroundColor: '#10a1e3', 
-          color: 'white',
+      <Box
+        sx={{
+          width: "100%",
+          backgroundColor: "#10a1e3",
+          color: "white",
           p: 2,
           mb: 3,
           boxShadow: 2,
-          textAlign: "center"
+          textAlign: "center",
         }}
       >
         <Typography variant="h4">Formulario de Registro de Líder</Typography>
@@ -311,7 +318,7 @@ const CreateLeaderForm = () => {
 
       <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 1, sm: 2 } }}>
         {/* Párrafo informativo */}
-        <Typography variant="body1" sx={{ mb: 4, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+        <Typography variant="body1" sx={{ mb: 4, p: 2, backgroundColor: "#f5f5f5", borderRadius: 1 }}>
           Este formulario permite registrar un nuevo líder en el sistema. Para completar el registro, 
           primero debes buscar o crear un recomendado asociado al líder. Si el líder no tiene un 
           recomendado, puedes registrarlo como autorecomendado o crear un nuevo recomendado para él.
@@ -325,7 +332,6 @@ const CreateLeaderForm = () => {
             value={formData.recomendado_identificacion}
             onChange={handleChange}
             fullWidth
-            required
             sx={{ mb: 2 }}
           />
           <Button variant="contained" color="primary" onClick={handleBuscarRecomendado} disabled={loading} fullWidth>
@@ -348,11 +354,7 @@ const CreateLeaderForm = () => {
 
         {/* Botón para mostrar/ocultar el formulario de creación de líder */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setShowCreateForm((prev) => !prev)}
-          >
+          <Button variant="contained" startIcon={<Add />} onClick={() => setShowCreateForm((prev) => !prev)}>
             {showCreateForm ? "Ocultar Formulario" : "Crear Líder"}
           </Button>
         </Box>
@@ -407,13 +409,22 @@ const CreateLeaderForm = () => {
                 required
                 sx={{ mb: 2 }}
               />
+              {/* Campo de Recomendado no es requerido */}
               <TextField
-                label="Identificación del Recomendado"
+                label="Identificación del Recomendado (opcional)"
                 name="recomendado_identificacion"
                 value={formData.recomendado_identificacion}
                 onChange={handleChange}
                 fullWidth
-                required
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Objetivo de Votantes (opcional)"
+                name="objetivo"
+                value={formData.objetivo}
+                onChange={handleChange}
+                fullWidth
+                type="number"
                 sx={{ mb: 2 }}
               />
               <Button type="submit" variant="contained" color="primary" disabled={loading} fullWidth>
@@ -438,6 +449,7 @@ const CreateLeaderForm = () => {
                   <TableCell><strong>Celular</strong></TableCell>
                   <TableCell><strong>Email</strong></TableCell>
                   <TableCell><strong>Recomendado</strong></TableCell>
+                  <TableCell><strong>Objetivo</strong></TableCell>
                   <TableCell align="center"><strong>Acciones</strong></TableCell>
                 </TableRow>
               </TableHead>
@@ -450,6 +462,7 @@ const CreateLeaderForm = () => {
                     <TableCell>{leader.lider_celular}</TableCell>
                     <TableCell>{leader.lider_email}</TableCell>
                     <TableCell>{leader.recomendado_identificacion || "N/A"}</TableCell>
+                    <TableCell>{leader.lider_objetivo || "N/A"}</TableCell>
                     <TableCell align="center">
                       <IconButton aria-label="editar" onClick={() => handleOpenLeaderEditModal(leader)}>
                         <Edit />
@@ -462,7 +475,7 @@ const CreateLeaderForm = () => {
                 ))}
                 {leaders.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={8}>
                       <Typography variant="body1" align="center">
                         No se encontraron líderes.
                       </Typography>
@@ -475,7 +488,13 @@ const CreateLeaderForm = () => {
         </Box>
 
         {/* Modal: Recomendado no encontrado */}
-        <Dialog open={recommendedNotFoundModalOpen} onClose={() => { setRecommendedNotFoundModalOpen(false); setRecomendadoData(null); }}>
+        <Dialog
+          open={recommendedNotFoundModalOpen}
+          onClose={() => {
+            setRecommendedNotFoundModalOpen(false);
+            setRecomendadoData(null);
+          }}
+        >
           <DialogTitle>Recomendado no encontrado</DialogTitle>
           <DialogContent>
             <Typography sx={{ mb: 2 }}>
@@ -633,7 +652,6 @@ const CreateLeaderForm = () => {
           <DialogContent>
             {leaderEditData && (
               <Box component="form" onSubmit={handleLeaderEditSubmit}>
-                {/* Campo oculto para el id original */}
                 <input
                   type="hidden"
                   name="original_identificacion"
@@ -692,6 +710,15 @@ const CreateLeaderForm = () => {
                   onChange={handleLeaderEditChange}
                   fullWidth
                   required
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  label="Objetivo de Votantes (opcional)"
+                  name="objetivo"
+                  value={leaderEditData.objetivo}
+                  onChange={handleLeaderEditChange}
+                  fullWidth
+                  type="number"
                   sx={{ mb: 2 }}
                 />
                 <Button type="submit" variant="contained" color="primary" disabled={loading} fullWidth sx={{ mb: 2 }}>
