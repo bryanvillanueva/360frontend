@@ -41,8 +41,11 @@ const VotantesFiltro = () => {
     }
     setLoadingRecommended(true);
     try {
+      console.log("🔍 Buscando recomendados con término:", searchTerm);
       // Se consulta el endpoint que trae todos los recomendados
       const response = await axios.get("https://backend-node-soft360-production.up.railway.app/recomendados");
+      console.log("📡 Respuesta de recomendados:", response.data);
+      
       // Filtrar resultados por cédula, nombre o apellido (convertido a minúsculas)
       const lowerTerm = searchTerm.toLowerCase();
       const filtered = response.data.filter((rec) =>
@@ -50,9 +53,10 @@ const VotantesFiltro = () => {
         (rec.nombre && rec.nombre.toLowerCase().includes(lowerTerm)) ||
         (rec.apellido && rec.apellido.toLowerCase().includes(lowerTerm))
       );
+      console.log("🎯 Recomendados filtrados:", filtered);
       setRecommendedResults(filtered);
     } catch (error) {
-      console.error("Error al buscar recomendados:", error);
+      console.error("❌ Error al buscar recomendados:", error);
       alert("Error al buscar recomendados");
     } finally {
       setLoadingRecommended(false);
@@ -61,6 +65,7 @@ const VotantesFiltro = () => {
 
   // Cuando el usuario selecciona un recomendado de la lista
   const handleSelectRecommended = async (rec) => {
+    console.log("👤 Recomendado seleccionado:", rec);
     setSelectedRecommended(rec);
     setLoadingLideres(true);
     try {
@@ -69,21 +74,27 @@ const VotantesFiltro = () => {
       const response = await axios.get(
         `https://backend-node-soft360-production.up.railway.app/lideres/por-recomendado?recomendado=${rec.identificacion}`
       );
+      console.log("👑 Respuesta de líderes:", response.data);
+      
       const leaders = response.data || [];
       let total = 0;
       // Para cada líder, se consulta el total de votantes asociados
       for (let leader of leaders) {
+        console.log(`🔍 Consultando votantes para líder: ${leader.lider_identificacion}`);
         const votRes = await axios.get(
           `https://backend-node-soft360-production.up.railway.app/votantes/por-lider?lider=${leader.lider_identificacion}`
         );
+        console.log(`📊 Respuesta votantes para ${leader.lider_identificacion}:`, votRes.data);
         const voters = votRes.data.votantes || [];
         leader.totalVotantes = voters.length;
         total += voters.length;
+        console.log(`🗳️ Total votantes para ${leader.lider_identificacion}: ${voters.length}`);
       }
+      console.log("📈 Total general de votantes:", total);
       setLideres(leaders);
       setTotalVotantes(total);
     } catch (error) {
-      console.error("Error al obtener líderes:", error);
+      console.error("❌ Error al obtener líderes:", error);
       alert("Error al obtener líderes asociados");
     } finally {
       setLoadingLideres(false);
@@ -92,40 +103,62 @@ const VotantesFiltro = () => {
 
   // Toggle para expandir/ocultar la lista de votantes de un líder
   const handleToggleExpand = async (leaderId) => {
+    console.log(`🔄 Toggle expand para líder: ${leaderId}`);
     if (expandedLeader === leaderId) {
       setExpandedLeader("");
       return;
     }
     setExpandedLeader(leaderId);
     if (!leaderVoters[leaderId]) {
+      console.log(`🔍 Cargando votantes detallados para líder: ${leaderId}`);
       setLoadingVotantes((prev) => ({ ...prev, [leaderId]: true }));
       try {
-        const res = await axios.get(
-          `https://backend-node-soft360-production.up.railway.app/votantes/por-lider-detalle?lider=${leaderId}`
-        );
+        // Intentamos primero con el endpoint detallado
+        let res;
+        try {
+          res = await axios.get(
+            `https://backend-node-soft360-production.up.railway.app/votantes/por-lider-detalle?lider=${leaderId}`
+          );
+          console.log(`📡 Respuesta endpoint detalle para ${leaderId}:`, res.data);
+        } catch (detailError) {
+          console.warn(`⚠️ Endpoint detalle falló, intentando con endpoint regular:`, detailError);
+          // Si falla, usamos el endpoint regular
+          res = await axios.get(
+            `https://backend-node-soft360-production.up.railway.app/votantes/por-lider?lider=${leaderId}`
+          );
+          console.log(`📡 Respuesta endpoint regular para ${leaderId}:`, res.data);
+        }
+        
         const voters = res.data.votantes || [];
+        console.log(`🗳️ Votantes obtenidos para ${leaderId}:`, voters);
+        console.log(`📊 Estructura primer votante:`, voters[0]);
+        
         setLeaderVoters((prev) => ({ ...prev, [leaderId]: voters }));
       } catch (error) {
-        console.error("Error al obtener votantes para el líder:", error);
+        console.error("❌ Error al obtener votantes para el líder:", error);
         alert("Error al obtener votantes para el líder");
       } finally {
         setLoadingVotantes((prev) => ({ ...prev, [leaderId]: false }));
       }
+    } else {
+      console.log(`📚 Votantes ya cargados para ${leaderId}:`, leaderVoters[leaderId]);
     }
   };
 
   // Función para descargar la lista de votantes de un líder en CSV
   const handleDownloadExcel = (voters) => {
+    console.log("📥 Descargando Excel con votantes:", voters);
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Cedula,Nombre,Apellido,Direccion,Celular\n";
     voters.forEach((v) => {
-      const row = [
-        v.votante_identificacion,
-        v.votante_nombre,
-        v.votante_apellido,
-        v.direccion,
-        v.celular,
-      ].join(",");
+      // Usar las propiedades correctas basadas en el formato que llegue
+      const identificacion = v.votante_identificacion || v.identificacion || 'N/A';
+      const nombre = v.votante_nombre || v.nombre || 'N/A';
+      const apellido = v.votante_apellido || v.apellido || 'N/A';
+      const direccion = v.direccion || 'N/A';
+      const celular = v.celular || 'N/A';
+      
+      const row = [identificacion, nombre, apellido, direccion, celular].join(",");
       csvContent += row + "\n";
     });
     const encodedUri = encodeURI(csvContent);
@@ -157,6 +190,7 @@ const VotantesFiltro = () => {
           {loadingRecommended ? <CircularProgress size={24} /> : "Buscar"}
         </Button>
       </Box>
+
       {/* Solo se muestran resultados si se hizo la búsqueda */}
       {recommendedResults.length > 0 && (
         <Box sx={{ mb: 4 }}>
@@ -259,15 +293,27 @@ const VotantesFiltro = () => {
                                       <TableBody>
                                         {leaderVoters[leader.lider_identificacion] &&
                                         leaderVoters[leader.lider_identificacion].length > 0 ? (
-                                          leaderVoters[leader.lider_identificacion].map((v) => (
-                                            <TableRow key={v.votante_identificacion}>
-                                              <TableCell>{v.votante_identificacion}</TableCell>
-                                              <TableCell>{v.votante_nombre}</TableCell>
-                                              <TableCell>{v.votante_apellido}</TableCell>
-                                              <TableCell>{v.direccion}</TableCell>
-                                              <TableCell>{v.celular}</TableCell>
-                                            </TableRow>
-                                          ))
+                                          leaderVoters[leader.lider_identificacion].map((v, index) => {
+                                            // Log para cada votante al renderizar
+                                            console.log(`🎨 Renderizando votante ${index} del líder ${leader.lider_identificacion}:`, v);
+                                            
+                                            // Usar las propiedades correctas basadas en el formato que llegue
+                                            const identificacion = v.votante_identificacion || v.identificacion || 'SIN IDENTIFICACIÓN';
+                                            const nombre = v.votante_nombre || v.nombre || 'SIN NOMBRE';
+                                            const apellido = v.votante_apellido || v.apellido || 'SIN APELLIDO';
+                                            const direccion = v.direccion || 'SIN DIRECCIÓN';
+                                            const celular = v.celular || 'SIN CELULAR';
+                                            
+                                            return (
+                                              <TableRow key={identificacion || `votante-${index}`}>
+                                                <TableCell>{identificacion}</TableCell>
+                                                <TableCell>{nombre}</TableCell>
+                                                <TableCell>{apellido}</TableCell>
+                                                <TableCell>{direccion}</TableCell>
+                                                <TableCell>{celular}</TableCell>
+                                              </TableRow>
+                                            );
+                                          })
                                         ) : (
                                           <TableRow>
                                             <TableCell colSpan={5} align="center">
