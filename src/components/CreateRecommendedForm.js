@@ -51,7 +51,7 @@ const RecommendedManagement = () => {
 
   const fetchRecomendados = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:5000/recomendados");
+      const response = await axios.get("https://backend-node-soft360-production.up.railway.app/recomendados");
       setRecomendados(response.data);
       setFilteredRecomendados(response.data);
     } catch (error) {
@@ -118,13 +118,13 @@ const RecommendedManagement = () => {
       if (isEditing) {
         // Actualizar recomendado usando el original_identificacion para la verificación
         await axios.put(
-          `http://127.0.0.1:5000/recomendados/${formData.original_identificacion}`,
+          `https://backend-node-soft360-production.up.railway.app/recomendados/${formData.original_identificacion}`,
           formData
         );
         alert("Recomendado actualizado con éxito");
       } else {
         // Crear recomendado
-        await axios.post("http://127.0.0.1:5000/recomendados", formData);
+        await axios.post("https://backend-node-soft360-production.up.railway.app/recomendados", formData);
         alert("Recomendado creado con éxito");
       }
       setModalOpen(false);
@@ -146,7 +146,7 @@ const RecommendedManagement = () => {
     setLeadersAffected([]);
     try {
       const response = await axios.get(
-        `http://127.0.0.1:5000/lideres/por-recomendado?recomendado=${recomendado.identificacion}`
+        `https://backend-node-soft360-production.up.railway.app/lideres/por-recomendado?recomendado=${recomendado.identificacion}`
       );
       setLeadersAffected(response.data);
     } catch (error) {
@@ -166,7 +166,7 @@ const RecommendedManagement = () => {
     setLoading(true);
     try {
       await axios.delete(
-        `http://127.0.0.1:5000/recomendados/${deleteTarget.identificacion}`
+        `https://backend-node-soft360-production.up.railway.app/recomendados/${deleteTarget.identificacion}`
       );
       alert("Recomendado eliminado con éxito");
       setDeleteModalOpen(false);

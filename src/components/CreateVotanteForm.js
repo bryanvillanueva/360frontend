@@ -69,7 +69,7 @@ const CreateVotanteForm = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://127.0.0.1:5000/votantes/por-lider?lider=${formData.lider_identificacion}`
+        `https://backend-node-soft360-production.up.railway.app/votantes/por-lider?lider=${formData.lider_identificacion}`
       );
       if (response.data.lider) {
         setLiderData(response.data.lider);
@@ -96,7 +96,7 @@ const CreateVotanteForm = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post("http://127.0.0.1:5000/votantes", formData);
+      await axios.post("https://backend-node-soft360-production.up.railway.app/votantes", formData);
       alert("Votante creado con éxito");
       setFormData({
         identificacion: "",
@@ -149,7 +149,7 @@ const CreateVotanteForm = () => {
     setLoading(true);
     try {
       await axios.put(
-        `http://127.0.0.1:5000/votantes/${votanteEditData.original_identificacion}`,
+        `https://backend-node-soft360-production.up.railway.app/votantes/${votanteEditData.original_identificacion}`,
         votanteEditData
       );
       alert("Votante actualizado con éxito");
@@ -179,7 +179,7 @@ const CreateVotanteForm = () => {
     if (!votanteDeleteTarget) return;
     setVotanteDeleteLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:5000/votantes/${votanteDeleteTarget.identificacion}`);
+      await axios.delete(`https://backend-node-soft360-production.up.railway.app/votantes/${votanteDeleteTarget.identificacion}`);
       alert("Votante eliminado con éxito");
       setVotanteDeleteModalOpen(false);
       setVotanteDeleteTarget(null);
@@ -204,7 +204,7 @@ const CreateVotanteForm = () => {
     // Solo se permite reasignar si el duplicado tiene un líder distinto
     if (votanteDuplicadoData.lider_identificacion !== formData.lider_identificacion) {
       try {
-        await axios.put("http://127.0.0.1:5000/votantes/reasignar", {
+        await axios.put("https://backend-node-soft360-production.up.railway.app/votantes/reasignar", {
           votante_identificacion: votanteDuplicadoData.identificacion,
           old_lider_identificacion: votanteDuplicadoData.lider_identificacion,
           new_lider_identificacion: formData.lider_identificacion,

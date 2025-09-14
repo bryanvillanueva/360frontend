@@ -21,6 +21,7 @@ import {
 import { Edit, Delete, Add } from "@mui/icons-material";
 import axios from "axios";
 
+
 const CreateLeaderForm = () => {
   const [formData, setFormData] = useState({
     identificacion: "",
@@ -64,7 +65,7 @@ const CreateLeaderForm = () => {
   // Obtener la lista de líderes
   const fetchLeaders = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:5000/lideres");
+      const response = await axios.get("https://backend-node-soft360-production.up.railway.app/lideres");
       setLeaders(response.data);
     } catch (error) {
       console.error("Error al obtener líderes:", error);
@@ -98,7 +99,7 @@ const CreateLeaderForm = () => {
     setRecomendadoData(null);
     try {
       const response = await axios.get(
-        `http://127.0.0.1:5000/recomendados/${formData.recomendado_identificacion}`
+        `https://backend-node-soft360-production.up.railway.app/recomendados/${formData.recomendado_identificacion}`
       );
       setRecomendadoData(response.data);
     } catch (error) {
@@ -119,7 +120,7 @@ const CreateLeaderForm = () => {
     e.preventDefault();
     setRecommendedLoading(true);
     try {
-      const response = await axios.post("http://127.0.0.1:5000/recomendados", recommendedFormData);
+      const response = await axios.post("https://backend-node-soft360-production.up.railway.app/recomendados", recommendedFormData);
       alert("Recomendado creado con éxito");
       setRecomendadoData(response.data);
       setRecommendedNotFoundModalOpen(false);
@@ -143,7 +144,7 @@ const CreateLeaderForm = () => {
     }
     setLoading(true);
     try {
-      await axios.post("http://127.0.0.1:5000/lideres", formData);
+      await axios.post("https://backend-node-soft360-production.up.railway.app/lideres", formData);
       alert("Líder creado con éxito");
       setFormData({
         identificacion: "",
@@ -170,7 +171,7 @@ const CreateLeaderForm = () => {
     setLeaderWithoutRecommendedModalOpen(false);
     setLoading(true);
     try {
-      await axios.post("http://127.0.0.1:5000/recomendados", {
+      await axios.post("https://backend-node-soft360-production.up.railway.app/recomendados", {
         identificacion: formData.identificacion,
         nombre: formData.nombre,
         apellido: formData.apellido,
@@ -178,7 +179,7 @@ const CreateLeaderForm = () => {
         email: formData.email,
       });
       const leaderData = { ...formData, recomendado_identificacion: formData.identificacion };
-      await axios.post("http://127.0.0.1:5000/lideres", leaderData);
+      await axios.post("https://backend-node-soft360-production.up.railway.app/lideres", leaderData);
       alert("Líder y Autorecomendado creados con éxito");
       setFormData({
         identificacion: "",
@@ -245,7 +246,7 @@ const CreateLeaderForm = () => {
     try {
       // Utilizamos el id original para la actualización en la URL
       await axios.put(
-        `http://127.0.0.1:5000/lideres/${leaderEditData.original_identificacion}`,
+        `https://backend-node-soft360-production.up.railway.app/lideres/${leaderEditData.original_identificacion}`,
         leaderEditData
       );
       alert("Líder actualizado con éxito");
@@ -266,7 +267,7 @@ const CreateLeaderForm = () => {
     try {
       // Obtener votantes asociados al líder
       const response = await axios.get(
-        `http://127.0.0.1:5000/votantes/por-lider-detalle?lider=${leader.lider_identificacion}`
+        `https://backend-node-soft360-production.up.railway.app/votantes/por-lider-detalle?lider=${leader.lider_identificacion}`
       );
       setVotersAffected(response.data.votantes || []);
     } catch (error) {
@@ -286,7 +287,7 @@ const CreateLeaderForm = () => {
     if (!leaderDeleteTarget) return;
     setLeaderDeleteLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:5000/lideres/${leaderDeleteTarget.lider_identificacion}`);
+      await axios.delete(`https://backend-node-soft360-production.up.railway.app/lideres/${leaderDeleteTarget.lider_identificacion}`);
       alert("Líder eliminado con éxito");
       setLeaderDeleteModalOpen(false);
       setLeaderDeleteTarget(null);
