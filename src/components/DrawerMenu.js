@@ -190,12 +190,16 @@ const DrawerMenu = () => {
               </ListItemIconStyled>
               <ListItemTextStyled primary="Ver Lista de Votantes" />
             </ListItem>
-            <ListItem button sx={{ pl: 4 }} component={Link} to="/filtros/pdf">
+           
+
+            {/*desabilitado temporalmente */}
+            {/*<ListItem button sx={{ pl: 4 }} component={Link} to="/filtros/pdf">
               <ListItemIconStyled>
                 <PictureAsPdfIcon />
               </ListItemIconStyled>
               <ListItemTextStyled primary="Subir PDF E11" />
-            </ListItem>
+            </ListItem>*/}
+
           </List>
         </Collapse>
         <Divider />
