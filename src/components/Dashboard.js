@@ -52,11 +52,11 @@ const Dashboard = () => {
         promedioRes,
         tendenciaRes,
       ] = await Promise.all([
-        axios.get("http://127.0.0.1:5000/votantes/total"),
-        axios.get("http://127.0.0.1:5000/lideres/total"),
-        axios.get("http://127.0.0.1:5000/recomendados/total"),
-        axios.get("http://127.0.0.1:5000/votantes/promedio_lider"),
-        axios.get("http://127.0.0.1:5000/votantes/tendencia_mensual"),
+        axios.get("https://backend-node-soft360-production.up.railway.app/votantes/total"),
+        axios.get("https://backend-node-soft360-production.up.railway.app/lideres/total"),
+        axios.get("https://backend-node-soft360-production.up.railway.app/recomendados/total"),
+        axios.get("https://backend-node-soft360-production.up.railway.app/votantes/promedio_lider"),
+        axios.get("https://backend-node-soft360-production.up.railway.app/votantes/tendencia_mensual"),
       ]);
       setStats({
         totalVotantes: votantesRes.data, // { total: number, trend: "up" | "down" | "equal" }
@@ -73,9 +73,9 @@ const Dashboard = () => {
   // Cargar lista de líderes (que ya incluyen el campo lider_objetivo) y distribución de votantes por líder
   const fetchLeadersAndDistribution = async () => {
     try {
-      const leadersRes = await axios.get("http://127.0.0.1:5000/lideres");
+      const leadersRes = await axios.get("https://backend-node-soft360-production.up.railway.app/lideres");
       setLeaders(leadersRes.data);
-      const distributionRes = await axios.get("http://127.0.0.1:5000/lideres/distribution");
+      const distributionRes = await axios.get("https://backend-node-soft360-production.up.railway.app/lideres/distribution");
       setDistribution(distributionRes.data);
     } catch (error) {
       console.error("Error al cargar líderes o distribución:", error);

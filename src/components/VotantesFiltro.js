@@ -42,7 +42,7 @@ const VotantesFiltro = () => {
     setLoadingRecommended(true);
     try {
       // Se consulta el endpoint que trae todos los recomendados
-      const response = await axios.get("http://127.0.0.1:5000/recomendados");
+      const response = await axios.get("https://backend-node-soft360-production.up.railway.app/recomendados");
       // Filtrar resultados por cédula, nombre o apellido (convertido a minúsculas)
       const lowerTerm = searchTerm.toLowerCase();
       const filtered = response.data.filter((rec) =>
@@ -67,14 +67,14 @@ const VotantesFiltro = () => {
       // Consultamos líderes asociados al recomendado usando un endpoint personalizado
       // Se asume que el endpoint devuelve un arreglo de líderes asociados al recomendado
       const response = await axios.get(
-        `http://127.0.0.1:5000/lideres/por-recomendado?recomendado=${rec.identificacion}`
+        `https://backend-node-soft360-production.up.railway.app/lideres/por-recomendado?recomendado=${rec.identificacion}`
       );
       const leaders = response.data || [];
       let total = 0;
       // Para cada líder, se consulta el total de votantes asociados
       for (let leader of leaders) {
         const votRes = await axios.get(
-          `http://127.0.0.1:5000/votantes/por-lider?lider=${leader.lider_identificacion}`
+          `https://backend-node-soft360-production.up.railway.app/votantes/por-lider?lider=${leader.lider_identificacion}`
         );
         const voters = votRes.data.votantes || [];
         leader.totalVotantes = voters.length;
@@ -101,7 +101,7 @@ const VotantesFiltro = () => {
       setLoadingVotantes((prev) => ({ ...prev, [leaderId]: true }));
       try {
         const res = await axios.get(
-          `http://127.0.0.1:5000/votantes/por-lider-detalle?lider=${leaderId}`
+          `https://backend-node-soft360-production.up.railway.app/votantes/por-lider-detalle?lider=${leaderId}`
         );
         const voters = res.data.votantes || [];
         setLeaderVoters((prev) => ({ ...prev, [leaderId]: voters }));

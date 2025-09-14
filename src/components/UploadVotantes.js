@@ -48,7 +48,7 @@ const UploadVotantes = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/votantes/upload_csv",
+        "https://backend-node-soft360-production.up.railway.app/votantes/upload_csv",
         formDataToSend,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -104,7 +104,7 @@ const UploadVotantes = () => {
       if (reassignOptions[dup.identificacion] === "new") {
         // Se reasigna: se actualiza el registro del votante con la información ingresada (intentada)
         try {
-          await axios.put("http://127.0.0.1:5000/votantes/reasignar", {
+          await axios.put("https://backend-node-soft360-production.up.railway.app/votantes/reasignar", {
             votante_identificacion: dup.identificacion,
             old_lider_identificacion: dup.lider_identificacion,
             new_lider_identificacion: dup.lider_intentado,
@@ -123,7 +123,7 @@ const UploadVotantes = () => {
         // Opción "current": se mantiene el líder actual sin actualizar la información,
         // pero se crea un log en el perfil del líder (del duplicado ingresado) informando que se mantuvo
         try {
-          await axios.put("http://127.0.0.1:5000/votantes/reasignar", {
+          await axios.put("https://backend-node-soft360-production.up.railway.app/votantes/reasignar", {
             votante_identificacion: dup.identificacion,
             old_lider_identificacion: dup.lider_identificacion,
             new_lider_identificacion: dup.lider_identificacion,
