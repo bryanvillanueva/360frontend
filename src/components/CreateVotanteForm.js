@@ -21,6 +21,10 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  MenuItem,
+  InputLabel,
+  Select,
+  FormHelperText,
 } from "@mui/material";
 import axios from "axios";
 
@@ -33,15 +37,25 @@ const CreateVotanteForm = () => {
     celular: "",
     email: "",
     lider_identificacion: "",
+    departamento: "",
+    municipio: "",
+    barrio: "",
   });
   const [loading, setLoading] = useState(false);
   const [votantes, setVotantes] = useState([]);
   const [liderData, setLiderData] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
+  // Estados para datos de ubicación - CORREGIDO
+  const [departamentos, setDepartamentos] = useState([]);
+  const [todosMunicipios, setTodosMunicipios] = useState([]); // Todos los municipios
+  const [municipiosFiltrados, setMunicipiosFiltrados] = useState([]); // Municipios del departamento seleccionado
+  const [loadingDepartamentos, setLoadingDepartamentos] = useState(false);
+
   // Estados para edición de votante
   const [votanteEditModalOpen, setVotanteEditModalOpen] = useState(false);
   const [votanteEditData, setVotanteEditData] = useState(null);
+  const [municipiosEditFiltrados, setMunicipiosEditFiltrados] = useState([]); // Para el modal de edición
 
   // Estados para eliminación de votante
   const [votanteDeleteModalOpen, setVotanteDeleteModalOpen] = useState(false);
@@ -51,13 +65,175 @@ const CreateVotanteForm = () => {
   // Estado para manejo de duplicado
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [votanteDuplicadoData, setVotanteDuplicadoData] = useState(null);
-  // Estado para la opción de reasignación ("current" o "new")
   const [reassignOption, setReassignOption] = useState("current");
+
+// SOLUCIÓN: Modificar el useEffect que carga los departamentos
+
+useEffect(() => {
+  const fetchDepartamentosYMunicipios = async () => {
+    setLoadingDepartamentos(true);
+    try {
+      // Cargar departamentos
+      const deptosResponse = await axios.get("https://api-colombia.com/api/v1/Department");
+      console.log("Departamentos obtenidos:", deptosResponse.data);
+      
+      // FILTRAR BOGOTÁ DE LOS DEPARTAMENTOS (porque debe aparecer como ciudad en Cundinamarca)
+      const departamentosFiltrados = deptosResponse.data.filter(depto => 
+        depto.name !== "Bogotá D.C." && 
+        depto.name !== "Bogota" && 
+        depto.name !== "Bogotá"
+      );
+      
+      // ORDENAR DEPARTAMENTOS ALFABÉTICAMENTE
+      const departamentosOrdenados = departamentosFiltrados.sort((a, b) => 
+        a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+      );
+      setDepartamentos(departamentosOrdenados);
+
+      // Cargar todos los municipios
+      const municipiosResponse = await axios.get("https://api-colombia.com/api/v1/City");
+      console.log("Municipios obtenidos:", municipiosResponse.data);
+      
+      let municipiosProcesados = [...municipiosResponse.data];
+      
+      // BUSCAR EL ID DE CUNDINAMARCA
+      const cundinamarca = departamentosOrdenados.find(dept => 
+        dept.name === "Cundinamarca"
+      );
+      
+      if (cundinamarca) {
+        // VERIFICAR SI BOGOTÁ YA EXISTE EN LOS MUNICIPIOS DE CUNDINAMARCA
+        const bogotaExiste = municipiosProcesados.some(municipio => 
+          (municipio.name === "Bogotá" || 
+           municipio.name === "Bogotá D.C." || 
+           municipio.name === "Bogota") && 
+          municipio.departmentId === cundinamarca.id
+        );
+        
+        // SI BOGOTÁ NO EXISTE COMO MUNICIPIO DE CUNDINAMARCA, AGREGARLA
+        if (!bogotaExiste) {
+          const bogotaMunicipio = {
+            id: 999999, // ID temporal único
+            name: "Bogotá D.C.",
+            description: "Capital de Colombia",
+            departmentId: cundinamarca.id,
+            department: cundinamarca
+          };
+          municipiosProcesados.push(bogotaMunicipio);
+          console.log("Bogotá agregada como municipio de Cundinamarca");
+        }
+      }
+      
+      // ORDENAR MUNICIPIOS ALFABÉTICAMENTE
+      const municipiosOrdenados = municipiosProcesados.sort((a, b) => 
+        a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+      );
+      setTodosMunicipios(municipiosOrdenados);
+      
+    } catch (error) {
+      console.error("Error al cargar datos de ubicación:", error);
+      alert("Error al cargar la información de ubicación. Verifica tu conexión a internet.");
+    } finally {
+      setLoadingDepartamentos(false);
+    }
+  };
+  fetchDepartamentosYMunicipios();
+}, []);
+
+// MODIFICAR el useEffect que filtra municipios para mantener el orden alfabético
+
+useEffect(() => {
+  if (!formData.departamento) {
+    setMunicipiosFiltrados([]);
+    return;
+  }
+
+  // Buscar el ID del departamento seleccionado
+  const departamentoSeleccionado = departamentos.find(
+    dept => dept.name === formData.departamento
+  );
+  
+  if (!departamentoSeleccionado) {
+    console.error("Departamento no encontrado:", formData.departamento);
+    setMunicipiosFiltrados([]);
+    return;
+  }
+
+  console.log("Departamento seleccionado:", departamentoSeleccionado);
+  console.log("ID del departamento:", departamentoSeleccionado.id);
+
+  // Filtrar municipios por departamento Y ORDENAR ALFABÉTICAMENTE
+  const municipiosDelDepartamento = todosMunicipios
+    .filter(municipio => municipio.departmentId === departamentoSeleccionado.id)
+    .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+
+  console.log("Municipios filtrados para", formData.departamento, ":", municipiosDelDepartamento);
+  setMunicipiosFiltrados(municipiosDelDepartamento);
+}, [formData.departamento, departamentos, todosMunicipios]);
+
+// TAMBIÉN MODIFICAR el useEffect para el modal de edición
+
+useEffect(() => {
+  if (!votanteEditData?.departamento) {
+    setMunicipiosEditFiltrados([]);
+    return;
+  }
+
+  // Buscar el ID del departamento seleccionado en edición
+  const departamentoSeleccionado = departamentos.find(
+    dept => dept.name === votanteEditData.departamento
+  );
+  
+  if (!departamentoSeleccionado) {
+    console.error("Departamento no encontrado en edición:", votanteEditData.departamento);
+    setMunicipiosEditFiltrados([]);
+    return;
+  }
+
+  // Filtrar municipios por departamento para edición Y ORDENAR ALFABÉTICAMENTE
+  const municipiosDelDepartamento = todosMunicipios
+    .filter(municipio => municipio.departmentId === departamentoSeleccionado.id)
+    .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+
+  console.log("Municipios filtrados para edición:", municipiosDelDepartamento);
+  setMunicipiosEditFiltrados(municipiosDelDepartamento);
+}, [votanteEditData?.departamento, departamentos, todosMunicipios]);
 
   // Manejar cambios en el formulario principal
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    console.log(`Campo cambiado: ${name} = ${value}`); // Debug
+    
+    // Si cambia el departamento, limpiar municipio y barrio
+    if (name === "departamento") {
+      setFormData({ 
+        ...formData, 
+        [name]: value,
+        municipio: "",
+        barrio: ""
+      });
+    } else if (name === "municipio") {
+      setFormData({ 
+        ...formData, 
+        [name]: value,
+        barrio: ""
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  // Construir dirección completa
+  const construirDireccionCompleta = () => {
+    const { departamento, municipio, barrio, direccion } = formData;
+    let direccionCompleta = "";
+    
+    if (departamento) direccionCompleta += `Depto: ${departamento}, `;
+    if (municipio) direccionCompleta += `Municipio: ${municipio}, `;
+    if (barrio) direccionCompleta += `Barrio: ${barrio}, `;
+    if (direccion) direccionCompleta += `Dirección: ${direccion}`;
+    
+    return direccionCompleta;
   };
 
   // Buscar votantes asociados al líder
@@ -95,8 +271,16 @@ const CreateVotanteForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
+    // Construir la dirección completa
+    const direccionCompleta = construirDireccionCompleta();
+    const datosEnvio = {
+      ...formData,
+      direccion: direccionCompleta
+    };
+    
     try {
-      await axios.post("https://backend-node-soft360-production.up.railway.app/votantes", formData);
+      await axios.post("https://backend-node-soft360-production.up.railway.app/votantes", datosEnvio);
       alert("Votante creado con éxito");
       setFormData({
         identificacion: "",
@@ -106,17 +290,18 @@ const CreateVotanteForm = () => {
         celular: "",
         email: "",
         lider_identificacion: formData.lider_identificacion,
+        departamento: "",
+        municipio: "",
+        barrio: "",
       });
       handleBuscarVotantes();
     } catch (error) {
-      // Si se detecta duplicado, se espera que el backend retorne {duplicado: true, votante: {...}}
       if (
         error.response &&
         error.response.data &&
         error.response.data.duplicado
       ) {
         setVotanteDuplicadoData(error.response.data.votante);
-        // Reiniciamos la opción de reasignación a "current" por defecto
         setReassignOption("current");
         setDuplicateModalOpen(true);
       } else {
@@ -130,8 +315,39 @@ const CreateVotanteForm = () => {
 
   // --- Edición de votante ---
   const handleOpenVotanteEditModal = (votante) => {
-    setVotanteEditData({ ...votante, original_identificacion: votante.identificacion });
+    const direccionParseada = parsearDireccionExistente(votante.direccion);
+    
+    setVotanteEditData({ 
+      ...votante, 
+      original_identificacion: votante.identificacion,
+      ...direccionParseada
+    });
     setVotanteEditModalOpen(true);
+  };
+
+  const parsearDireccionExistente = (direccionCompleta) => {
+    const resultado = {
+      departamento: "",
+      municipio: "",
+      barrio: "",
+      direccion: direccionCompleta
+    };
+    
+    try {
+      const deptoMatch = direccionCompleta.match(/Depto: ([^,]+),/);
+      const municipioMatch = direccionCompleta.match(/Municipio: ([^,]+),/);
+      const barrioMatch = direccionCompleta.match(/Barrio: ([^,]+),/);
+      const direccionMatch = direccionCompleta.match(/Dirección: (.+)$/);
+      
+      if (deptoMatch) resultado.departamento = deptoMatch[1].trim();
+      if (municipioMatch) resultado.municipio = municipioMatch[1].trim();
+      if (barrioMatch) resultado.barrio = barrioMatch[1].trim();
+      if (direccionMatch) resultado.direccion = direccionMatch[1].trim();
+    } catch (error) {
+      console.error("Error al parsear dirección:", error);
+    }
+    
+    return resultado;
   };
 
   const handleCloseVotanteEditModal = () => {
@@ -141,16 +357,40 @@ const CreateVotanteForm = () => {
 
   const handleVotanteEditChange = (e) => {
     const { name, value } = e.target;
-    setVotanteEditData((prev) => ({ ...prev, [name]: value }));
+    
+    // Si cambia el departamento en edición, limpiar municipio y barrio
+    if (name === "departamento") {
+      setVotanteEditData((prev) => ({ 
+        ...prev, 
+        [name]: value,
+        municipio: "",
+        barrio: ""
+      }));
+    } else if (name === "municipio") {
+      setVotanteEditData((prev) => ({ 
+        ...prev, 
+        [name]: value,
+        barrio: ""
+      }));
+    } else {
+      setVotanteEditData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleVotanteEditSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
+    const direccionCompleta = construirDireccionCompletaParaEdicion(votanteEditData);
+    const datosEnvio = {
+      ...votanteEditData,
+      direccion: direccionCompleta
+    };
+    
     try {
       await axios.put(
         `https://backend-node-soft360-production.up.railway.app/votantes/${votanteEditData.original_identificacion}`,
-        votanteEditData
+        datosEnvio
       );
       alert("Votante actualizado con éxito");
       setVotanteEditModalOpen(false);
@@ -162,6 +402,18 @@ const CreateVotanteForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const construirDireccionCompletaParaEdicion = (data) => {
+    const { departamento, municipio, barrio, direccion } = data;
+    let direccionCompleta = "";
+    
+    if (departamento) direccionCompleta += `Depto: ${departamento}, `;
+    if (municipio) direccionCompleta += `Municipio: ${municipio}, `;
+    if (barrio) direccionCompleta += `Barrio: ${barrio}, `;
+    if (direccion) direccionCompleta += `Dirección: ${direccion}`;
+    
+    return direccionCompleta;
   };
 
   // --- Eliminación de votante ---
@@ -193,15 +445,12 @@ const CreateVotanteForm = () => {
   };
 
   // --- Modal de duplicado ---
-  // Se muestra la información existente versus la ingresada.
   const handleCerrarDuplicado = () => {
     setDuplicateModalOpen(false);
   };
 
-  // Función para manejar la reasignación
   const handleReassign = async () => {
     if (!votanteDuplicadoData) return;
-    // Solo se permite reasignar si el duplicado tiene un líder distinto
     if (votanteDuplicadoData.lider_identificacion !== formData.lider_identificacion) {
       try {
         await axios.put("https://backend-node-soft360-production.up.railway.app/votantes/reasignar", {
@@ -324,15 +573,76 @@ const CreateVotanteForm = () => {
                 required
                 sx={{ mb: 2 }}
               />
+              
+              {/* CORREGIDO: Campos de dirección estructurada */}
+              <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>Información de Ubicación</Typography>
+              
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel id="departamento-label">Departamento</InputLabel>
+                <Select
+                  labelId="departamento-label"
+                  name="departamento"
+                  value={formData.departamento}
+                  label="Departamento"
+                  onChange={handleChange}
+                  required
+                  disabled={loadingDepartamentos}
+                >
+                  {departamentos.map((depto) => (
+                    <MenuItem key={depto.id} value={depto.name}>
+                      {depto.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  {loadingDepartamentos ? "Cargando departamentos..." : "Seleccione el departamento"}
+                </FormHelperText>
+              </FormControl>
+              
+              <FormControl fullWidth sx={{ mb: 2 }} disabled={!formData.departamento}>
+                <InputLabel id="municipio-label">Municipio/Ciudad</InputLabel>
+                <Select
+                  labelId="municipio-label"
+                  name="municipio"
+                  value={formData.municipio}
+                  label="Municipio/Ciudad"
+                  onChange={handleChange}
+                  required
+                >
+                  {municipiosFiltrados.map((mun) => (
+                    <MenuItem key={mun.id} value={mun.name}>
+                      {mun.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  {municipiosFiltrados.length === 0 && formData.departamento ? "No hay municipios disponibles" : "Seleccione el municipio o ciudad"}
+                </FormHelperText>
+              </FormControl>
+              
               <TextField
-                label="Dirección"
+                label="Barrio/Localidad"
+                name="barrio"
+                value={formData.barrio}
+                onChange={handleChange}
+                fullWidth
+                sx={{ mb: 2 }}
+                placeholder="Ingrese el nombre del barrio"
+                helperText="Barrio o localidad (opcional)"
+              />
+              
+              <TextField
+                label="Dirección específica"
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleChange}
                 fullWidth
                 required
                 sx={{ mb: 2 }}
+                placeholder="Ej: Carrera 54 #68-21 - Apartamento 5, Piso 2"
+                helperText="Ingrese la dirección específica (calle, carrera, número, etc.)"
               />
+              
               <TextField
                 label="Celular"
                 name="celular"
@@ -410,7 +720,7 @@ const CreateVotanteForm = () => {
       </Box>
 
       {/* Modal: Edición de votante */}
-      <Dialog open={votanteEditModalOpen} onClose={handleCloseVotanteEditModal} fullWidth maxWidth="sm">
+      <Dialog open={votanteEditModalOpen} onClose={handleCloseVotanteEditModal} fullWidth maxWidth="md">
         <DialogTitle>Editar Votante</DialogTitle>
         <DialogContent>
           {votanteEditData && (
@@ -443,15 +753,70 @@ const CreateVotanteForm = () => {
                 required
                 sx={{ mb: 2 }}
               />
+              
+              <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>Información de Ubicación</Typography>
+              
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel id="edit-departamento-label">Departamento</InputLabel>
+                <Select
+                  labelId="edit-departamento-label"
+                  name="departamento"
+                  value={votanteEditData.departamento || ""}
+                  label="Departamento"
+                  onChange={handleVotanteEditChange}
+                  required
+                >
+                  {departamentos.map((depto) => (
+                    <MenuItem key={depto.id} value={depto.name}>
+                      {depto.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>Seleccione el departamento</FormHelperText>
+              </FormControl>
+              
+              <FormControl fullWidth sx={{ mb: 2 }} disabled={!votanteEditData.departamento}>
+                <InputLabel id="edit-municipio-label">Municipio/Ciudad</InputLabel>
+                <Select
+                  labelId="edit-municipio-label"
+                  name="municipio"
+                  value={votanteEditData.municipio || ""}
+                  label="Municipio/Ciudad"
+                  onChange={handleVotanteEditChange}
+                  required
+                >
+                  {municipiosEditFiltrados.map((mun) => (
+                    <MenuItem key={mun.id} value={mun.name}>
+                      {mun.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>Seleccione el municipio o ciudad</FormHelperText>
+              </FormControl>
+              
               <TextField
-                label="Dirección"
+                label="Barrio/Localidad"
+                name="barrio"
+                value={votanteEditData.barrio || ""}
+                onChange={handleVotanteEditChange}
+                fullWidth
+                sx={{ mb: 2 }}
+                placeholder="Ingrese el nombre del barrio"
+                helperText="Barrio o localidad (opcional)"
+              />
+              
+              <TextField
+                label="Dirección específica"
                 name="direccion"
-                value={votanteEditData.direccion}
+                value={votanteEditData.direccion || ""}
                 onChange={handleVotanteEditChange}
                 fullWidth
                 required
                 sx={{ mb: 2 }}
+                placeholder="Ej: Carrera 54 #68-21 - Apartamento 5, Piso 2"
+                helperText="Ingrese la dirección específica (calle, carrera, número, etc.)"
               />
+              
               <TextField
                 label="Celular"
                 name="celular"
@@ -545,7 +910,7 @@ const CreateVotanteForm = () => {
                   <strong>Nombre:</strong> {formData.nombre} {formData.apellido}
                 </Typography>
                 <Typography>
-                  <strong>Dirección:</strong> {formData.direccion}
+                  <strong>Dirección:</strong> {construirDireccionCompleta()}
                 </Typography>
                 <Typography>
                   <strong>Celular:</strong> {formData.celular}
