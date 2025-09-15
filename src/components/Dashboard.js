@@ -15,7 +15,10 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Chip,
+  Skeleton,
 } from "@mui/material";
+import { styled } from "@mui/material/styles";
 import axios from "axios";
 import {
   ResponsiveContainer,
@@ -26,10 +29,39 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
+  BarChart,
+  Bar,
 } from "recharts";
-import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import RemoveIcon from "@mui/icons-material/Remove";
+import {
+  ArrowDropUp,
+  ArrowDropDown,
+  Remove,
+  Groups,
+  Person,
+  HowToReg,
+} from "@mui/icons-material";
+
+const HeaderBox = styled(Box)(({ theme }) => ({
+  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+  padding: theme.spacing(4),
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(3),
+  color: "#fff",
+  textAlign: "center",
+  boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
+}));
+
+const StatCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(3),
+  borderRadius: theme.spacing(3),
+  textAlign: "center",
+  transition: "all 0.3s",
+  cursor: "pointer",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
+  },
+}));
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -37,12 +69,10 @@ const Dashboard = () => {
   const [trendData, setTrendData] = useState([]);
   const [leaders, setLeaders] = useState([]);
   const [distribution, setDistribution] = useState([]);
-  const [compliantLeaders, setCompliantLeaders] = useState([]);
-  const [nonCompliantLeaders, setNonCompliantLeaders] = useState([]);
   const [openModal, setOpenModal] = useState(false);
-  const [modalGroup, setModalGroup] = useState(""); // "compliant" o "non"
+  const [modalData, setModalData] = useState([]);
+  const [modalTitle, setModalTitle] = useState("");
 
-  // Cargar estadísticas generales y datos de tendencia
   const fetchStats = async () => {
     try {
       const [
@@ -51,34 +81,26 @@ const Dashboard = () => {
         recomendadosRes,
         promedioRes,
         tendenciaRes,
+        distributionRes,
       ] = await Promise.all([
         axios.get("https://backend-node-soft360-production.up.railway.app/votantes/total"),
         axios.get("https://backend-node-soft360-production.up.railway.app/lideres/total"),
         axios.get("https://backend-node-soft360-production.up.railway.app/recomendados/total"),
         axios.get("https://backend-node-soft360-production.up.railway.app/votantes/promedio_lider"),
         axios.get("https://backend-node-soft360-production.up.railway.app/votantes/tendencia_mensual"),
+        axios.get("https://backend-node-soft360-production.up.railway.app/lideres/distribution"),
       ]);
+
       setStats({
-        totalVotantes: votantesRes.data, // { total: number, trend: "up" | "down" | "equal" }
+        totalVotantes: votantesRes.data,
         totalLideres: lideresRes.data,
         totalRecomendados: recomendadosRes.data,
-        promedioVotantesPorLider: promedioRes.data, // { promedio: number, trend: "up" | "down" | "equal" }
+        promedioVotantesPorLider: promedioRes.data,
       });
       setTrendData(tendenciaRes.data);
-    } catch (error) {
-      console.error("Error al cargar estadísticas:", error);
-    }
-  };
-
-  // Cargar lista de líderes (que ya incluyen el campo lider_objetivo) y distribución de votantes por líder
-  const fetchLeadersAndDistribution = async () => {
-    try {
-      const leadersRes = await axios.get("https://backend-node-soft360-production.up.railway.app/lideres");
-      setLeaders(leadersRes.data);
-      const distributionRes = await axios.get("https://backend-node-soft360-production.up.railway.app/lideres/distribution");
       setDistribution(distributionRes.data);
     } catch (error) {
-      console.error("Error al cargar líderes o distribución:", error);
+      console.error("Error al cargar estadísticas:", error);
     }
   };
 
@@ -86,52 +108,25 @@ const Dashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       await fetchStats();
-      await fetchLeadersAndDistribution();
       setLoading(false);
     };
     fetchData();
   }, []);
 
-  // Calcular grupos de cumplimiento a partir de los datos de líderes y distribución
-  useEffect(() => {
-    // Creamos un mapa: clave = identificación del líder, valor = total de votantes asignados
-    const leaderMap = {};
-    distribution.forEach((item) => {
-      leaderMap[item.lider_identificacion] = item.total_votantes;
-    });
-    const compliant = [];
-    const nonCompliant = [];
-    leaders.forEach((leader) => {
-      const votersCount = leaderMap[leader.lider_identificacion] || 0;
-      // Usamos el campo lider_objetivo (asegúrate de que en la BD sea un entero o convertible a Number)
-      const objetivo = leader.lider_objetivo ? Number(leader.lider_objetivo) : 0;
-      const percentage = objetivo > 0 ? Math.round((votersCount / objetivo) * 100) : null;
-      const leaderWithStats = { ...leader, votersCount, percentage };
-      // Si existe un objetivo y el porcentaje es >= 100 se considera en cumplimiento
-      if (objetivo > 0 && percentage >= 100) {
-        compliant.push(leaderWithStats);
-      } else {
-        nonCompliant.push(leaderWithStats);
-      }
-    });
-    setCompliantLeaders(compliant);
-    setNonCompliantLeaders(nonCompliant);
-  }, [leaders, distribution]);
-
-  // Función para renderizar ícono de tendencia
   const renderTrendIcon = (trend) => {
     switch (trend) {
       case "up":
-        return <ArrowDropUpIcon color="success" fontSize="large" />;
+        return <ArrowDropUp color="success" fontSize="large" />;
       case "down":
-        return <ArrowDropDownIcon color="error" fontSize="large" />;
+        return <ArrowDropDown color="error" fontSize="large" />;
       default:
-        return <RemoveIcon color="disabled" fontSize="large" />;
+        return <Remove color="disabled" fontSize="large" />;
     }
   };
 
-  const handleOpenModal = (group) => {
-    setModalGroup(group);
+  const handleOpenModal = (title, data) => {
+    setModalTitle(title);
+    setModalData(data);
     setOpenModal(true);
   };
 
@@ -141,123 +136,91 @@ const Dashboard = () => {
 
   if (loading || !stats) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-        <CircularProgress />
+      <Box sx={{ p: 3 }}>
+        <Skeleton variant="rectangular" height={80} sx={{ mb: 3, borderRadius: 2 }} />
+        <Grid container spacing={3}>
+          {[...Array(4)].map((_, i) => (
+            <Grid item xs={12} md={3} key={i}>
+              <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 3 }} />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
+      <HeaderBox>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          Panel de Control Electoral
+        </Typography>
+        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+          Seguimiento en tiempo real de votantes, líderes, recomendados y grupos
+        </Typography>
+      </HeaderBox>
 
-      {/* Tarjetas de Totales */}
-      <Grid container spacing={3}>
+      {/* Métricas principales */}
+      <Grid container spacing={3} sx={{ px: { xs: 2, md: 4 } }}>
         <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: "center" }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <StatCard onClick={() => handleOpenModal("Detalle de Votantes", [])}>
+            <Person sx={{ fontSize: 40, color: "#1976d2" }} />
+            <Typography variant="h6" sx={{ mt: 1 }}>
               Total de Votantes
             </Typography>
-            <Typography variant="h4" sx={{color: "#1976d2", fontWeight: "bold" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "#1976d2" }}>
               {stats.totalVotantes.total}
             </Typography>
-            <Box sx={{ display: "flex", justifyContent: "center" }}>
-              {renderTrendIcon(stats.totalVotantes.trend)}
-            </Box>
-          </Paper>
+            {renderTrendIcon(stats.totalVotantes.trend)}
+          </StatCard>
         </Grid>
+
         <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: "center" }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <StatCard onClick={() => handleOpenModal("Detalle de Líderes", [])}>
+            <HowToReg sx={{ fontSize: 40, color: "#018da5" }} />
+            <Typography variant="h6" sx={{ mt: 1 }}>
               Total de Líderes
             </Typography>
-            <Typography variant="h4" sx={{ color: "#1976d2", fontWeight: "bold" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "#018da5" }}>
               {stats.totalLideres.total}
             </Typography>
-            <Box sx={{ display: "flex", justifyContent: "center" }}>
-              {renderTrendIcon(stats.totalLideres.trend)}
-            </Box>
-          </Paper>
+            {renderTrendIcon(stats.totalLideres.trend)}
+          </StatCard>
         </Grid>
+
         <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: "center" }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <StatCard onClick={() => handleOpenModal("Detalle de Recomendados", [])}>
+            <Groups sx={{ fontSize: 40, color: "#0b9b8a" }} />
+            <Typography variant="h6" sx={{ mt: 1 }}>
               Total de Recomendados
             </Typography>
-            <Typography variant="h4" sx={{ color: "#1976d2", fontWeight: "bold" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "#0b9b8a" }}>
               {stats.totalRecomendados.total}
             </Typography>
-            <Box sx={{ display: "flex", justifyContent: "center" }}>
-              {renderTrendIcon(stats.totalRecomendados.trend)}
-            </Box>
-          </Paper>
+            {renderTrendIcon(stats.totalRecomendados.trend)}
+          </StatCard>
         </Grid>
+
         <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: "center" }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-              Prom. Votantes/Líder
+          <StatCard>
+            <Person sx={{ fontSize: 40, color: "#ff9800" }} />
+            <Typography variant="h6" sx={{ mt: 1 }}>
+              Prom. Votantes / Líder
             </Typography>
-            <Typography variant="h4" sx={{ color: "#1976d2", fontWeight: "bold" }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "#ff9800" }}>
               {stats.promedioVotantesPorLider.promedio}
             </Typography>
-            <Box sx={{ display: "flex", color: "#1976d2", justifyContent: "center" }}>
-              {renderTrendIcon(stats.promedioVotantesPorLider.trend)}
-            </Box>
-          </Paper>
+            {renderTrendIcon(stats.promedioVotantesPorLider.trend)}
+          </StatCard>
         </Grid>
       </Grid>
 
-      {/* Sección de Cumplimiento de Líderes */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Cumplimiento de Líderes
+      {/* Gráfico de tendencia */}
+      <Box sx={{ mt: 5, px: { xs: 2, md: 4 } }}>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+          Tendencia de Votantes (últimos meses)
         </Typography>
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, textAlign: "center" }}>
-              <Typography variant="subtitle1">
-                Líderes en Cumplimiento
-              </Typography>
-              <Typography variant="h4" sx={{color: "#1976d2", fontWeight: "bold" }}>
-                {compliantLeaders.length}
-              </Typography>
-              <Button
-                variant="outlined"
-                onClick={() => handleOpenModal("compliant")}
-                sx={{ mt: 2 }}
-              >
-                Ver Detalles
-              </Button>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2, textAlign: "center" }}>
-              <Typography variant="subtitle1">
-                Líderes Fuera de Cumplimiento
-              </Typography>
-              <Typography variant="h4" sx={{color: "#1976d2",  fontWeight: "bold" }}>
-                {nonCompliantLeaders.length}
-              </Typography>
-              <Button
-                variant="outlined"
-                onClick={() => handleOpenModal("non")}
-                sx={{ mt: 2 }}
-              >
-                Ver Detalles
-              </Button>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
-
-      {/* Gráfico de Línea para Tendencia de Votantes en el Último Mes */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Tendencia de Votantes en el Último Mes
-        </Typography>
-        <Paper sx={{ p: 2, height: 300 }}>
+        <Paper sx={{ p: 2, borderRadius: 3, height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -265,61 +228,59 @@ const Dashboard = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#1976d2"
-                strokeWidth={2}
-              />
+              <Line type="monotone" dataKey="count" stroke="#1976d2" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>
         </Paper>
       </Box>
 
-      {/* Modal: Detalle de Líderes según cumplimiento */}
+      {/* Gráfico de distribución */}
+      <Box sx={{ mt: 5, px: { xs: 2, md: 4 } }}>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+          Distribución de Votantes por Líder
+        </Typography>
+        <Paper sx={{ p: 2, borderRadius: 3, height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={distribution}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="lider_identificacion" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="total_votantes" fill="#018da5" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Paper>
+      </Box>
+
+      {/* Modal Detalles */}
       <Dialog open={openModal} onClose={handleCloseModal} fullWidth maxWidth="lg">
-        <DialogTitle>
-          {modalGroup === "compliant"
-            ? "Líderes en Cumplimiento"
-            : "Líderes Fuera de Cumplimiento"}
-        </DialogTitle>
+        <DialogTitle>{modalTitle}</DialogTitle>
         <DialogContent>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>Identificación</TableCell>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>Nombre</TableCell>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>Apellido</TableCell>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>Celular</TableCell>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>Email</TableCell>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>Objetivo</TableCell>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>Total de Votantes</TableCell>
-                  <TableCell sx={{backgroundColor:"#1976d2", color: "#fff"}}>% Cumplimiento</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(
-                  modalGroup === "compliant" ? compliantLeaders : nonCompliantLeaders
-                ).map((leader) => (
-                  <TableRow key={leader.lider_identificacion}>
-                    <TableCell>{leader.lider_identificacion}</TableCell>
-                    <TableCell>{leader.lider_nombre}</TableCell>
-                    <TableCell>{leader.lider_apellido}</TableCell>
-                    <TableCell>{leader.lider_celular}</TableCell>
-                    <TableCell>{leader.lider_email}</TableCell>
-                    <TableCell>{leader.lider_objetivo || "N/A"}</TableCell>
-                    <TableCell>{leader.votersCount}</TableCell>
-                    <TableCell>
-                      {leader.lider_objetivo
-                        ? `${leader.percentage}%`
-                        : "N/A"}
-                    </TableCell>
+          {modalData.length === 0 ? (
+            <Typography variant="body1">No hay datos disponibles</Typography>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    {Object.keys(modalData[0]).map((key) => (
+                      <TableCell key={key}>{key}</TableCell>
+                    ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {modalData.map((row, i) => (
+                    <TableRow key={i}>
+                      {Object.values(row).map((val, j) => (
+                        <TableCell key={j}>{val}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </DialogContent>
       </Dialog>
     </Box>
