@@ -8,6 +8,7 @@ import UploadVotantes from "./components/UploadVotantes";
 import VotantesFiltro from "./components/VotantesFiltro";
 import DrawerMenu from "./components/DrawerMenu";
 import Dashboard from "./components/Dashboard";
+import Grupos from "./components/Grupos";
 import { CssBaseline, ThemeProvider, createTheme, Box } from "@mui/material";
 import "@fontsource/montserrat"; // Estilo regular
 import "@fontsource/montserrat/700.css"; // Estilo bold
@@ -28,7 +29,7 @@ function App() {
         <Box
           sx={{
             padding: "20px",
-            marginLeft: 30, // margen para desktop
+            marginLeft: 35, // margen para desktop (ajustado para el drawer de 280px)
             "@media (max-width: 600px)": {
               marginLeft: 0, // sin margen en mobile
             },
@@ -37,6 +38,9 @@ function App() {
           <Routes>
             {/* Dashboard */}
             <Route path="/" element={<Dashboard/>} />
+
+            {/* Grupos */}
+            <Route path="/grupos" element={<Grupos />} />
 
             {/* Grupo "Crear" */}
             <Route path="/crear/recomendados" element={<CreateRecommendedForm />} />
