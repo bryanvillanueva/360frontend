@@ -45,16 +45,7 @@ import SearchLeaderModal from "./modals/SearchLeaderModal";
 import ViewLeaderModal from "./modals/ViewLeaderModal";
 import BulkDeleteBar from "./modals/BulkDeleteBar";
 import RecommendedFormModal from "./modals/RecommendedFormModal";
-
-// Styled Components
-const HeaderBox = styled(Box)(({ theme }) => ({
-  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(3),
-  color: "#fff",
-  boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
-}));
+import PageHeader from "./ui/PageHeader";
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.spacing(2),
@@ -490,27 +481,10 @@ const CreateLeaderForm = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
-      <Fade in timeout={800}>
-        <HeaderBox>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              textAlign: "center",
-              mb: 2,
-              textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            Gestión de Líderes
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ textAlign: "center", opacity: 0.95 }}
-          >
-            Administra y organiza los líderes del sistema electoral
-          </Typography>
-        </HeaderBox>
-      </Fade>
+      <PageHeader
+        title="Gestión de Líderes"
+        description="Administra y organiza los líderes del sistema electoral"
+      />
 
       <Box sx={{ maxWidth: 1400, mx: "auto", px: { xs: 2, md: 3 } }}>
         {/* Barra de herramientas */}

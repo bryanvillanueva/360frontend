@@ -36,6 +36,7 @@ import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import SearchIcon from "@mui/icons-material/Search";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import PageHeader from "./ui/PageHeader";
 
 // Modales
 import CreateGroupModal from "./modals/CreateGroupModal";
@@ -73,14 +74,6 @@ const StatCard = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const HeaderBox = styled(Box)(({ theme }) => ({
-  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(3),
-  color: "#fff",
-  boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
-}));
 
 const SearchBar = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-root": {
@@ -318,17 +311,11 @@ const Grupos = () => {
 
   return (
     <Fade in={true} timeout={800}>
-      <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <HeaderBox>
-          <Typography variant="h3" sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-            <GroupIcon sx={{ fontSize: 48 }} />
-            Gestión de Grupos
-          </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.9 }}>
-            Organiza y gestiona los grupos de votantes de manera eficiente
-          </Typography>
-        </HeaderBox>
+      <Box>
+        <PageHeader
+          title="Gestión de Grupos"
+          description="Organiza y gestiona los grupos de votantes de manera eficiente"
+        />
 
         {/* Estadísticas */}
         <Grid container spacing={3} sx={{ mb: 4 }}>

@@ -40,16 +40,7 @@ import {
   Person,
   HowToReg,
 } from "@mui/icons-material";
-
-const HeaderBox = styled(Box)(({ theme }) => ({
-  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(3),
-  color: "#fff",
-  textAlign: "center",
-  boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
-}));
+import PageHeader from "./ui/PageHeader";
 
 const StatCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -136,8 +127,8 @@ const Dashboard = () => {
 
   if (loading || !stats) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Skeleton variant="rectangular" height={80} sx={{ mb: 3, borderRadius: 2 }} />
+      <Box>
+        <Skeleton variant="rectangular" height={80} sx={{ mb: 3 }} />
         <Grid container spacing={3}>
           {[...Array(4)].map((_, i) => (
             <Grid item xs={12} md={3} key={i}>
@@ -151,17 +142,13 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
-      <HeaderBox>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          Panel de Control Electoral
-        </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.9 }}>
-          Seguimiento en tiempo real de votantes, líderes, recomendados y grupos
-        </Typography>
-      </HeaderBox>
+      <PageHeader
+        title="Panel de Control Electoral"
+        description="Seguimiento en tiempo real de votantes, líderes, recomendados y grupos"
+      />
 
       {/* Métricas principales */}
-      <Grid container spacing={3} sx={{ px: { xs: 2, md: 4 } }}>
+      <Grid container spacing={3}>
         <Grid item xs={12} md={3}>
           <StatCard onClick={() => handleOpenModal("Detalle de Votantes", [])}>
             <Person sx={{ fontSize: 40, color: "#1976d2" }} />
@@ -216,7 +203,7 @@ const Dashboard = () => {
       </Grid>
 
       {/* Gráfico de tendencia */}
-      <Box sx={{ mt: 5, px: { xs: 2, md: 4 } }}>
+      <Box sx={{ mt: 5 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Tendencia de Votantes (últimos meses)
         </Typography>
@@ -235,7 +222,7 @@ const Dashboard = () => {
       </Box>
 
       {/* Gráfico de distribución */}
-      <Box sx={{ mt: 5, px: { xs: 2, md: 4 } }}>
+      <Box sx={{ mt: 5 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Distribución de Votantes por Líder
         </Typography>

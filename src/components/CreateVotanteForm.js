@@ -13,15 +13,7 @@ import VotanteFormModal from "./modals/VotanteFormModal";
 import SearchLeaderModal from "./modals/SearchLeaderModal";
 import SearchRecommendedModal from "./modals/SearchRecommendedModal";
 import SearchGroupModal from "./modals/SearchGroupModal";
-
-const HeaderBox = styled(Box)(({ theme }) => ({
-  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(3),
-  color: "#fff",
-  boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
-}));
+import PageHeader from "./ui/PageHeader";
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.spacing(2),
@@ -142,14 +134,10 @@ const CreateVotanteForm = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
-      <HeaderBox>
-        <Typography variant="h4" sx={{ fontWeight: 700, textAlign: "center", mb: 2 }}>
-          Gestión de Votantes
-        </Typography>
-        <Typography variant="body1" sx={{ textAlign: "center", opacity: 0.95 }}>
-          Administra y organiza los votantes del sistema electoral
-        </Typography>
-      </HeaderBox>
+      <PageHeader
+        title="Gestión de Votantes"
+        description="Administra y organiza los votantes del sistema electoral"
+      />
 
       <Box sx={{ maxWidth: 1400, mx: "auto", px: 2 }}>
         <Paper sx={{ p: 2, mb: 3, borderRadius: 2, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
