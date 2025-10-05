@@ -45,34 +45,27 @@ import SearchLeaderModal from "./modals/SearchLeaderModal";
 import ViewLeaderModal from "./modals/ViewLeaderModal";
 import BulkDeleteBar from "./modals/BulkDeleteBar";
 import RecommendedFormModal from "./modals/RecommendedFormModal";
-
-// Styled Components
-const HeaderBox = styled(Box)(({ theme }) => ({
-  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(3),
-  color: "#fff",
-  boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
-}));
+import PageHeader from "./ui/PageHeader";
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.spacing(2),
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
   marginTop: theme.spacing(3),
+  overflowX: "auto",
   "& .MuiTableHead-root": {
     background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
     "& .MuiTableCell-head": {
       color: "#fff",
       fontWeight: 600,
-      fontSize: "0.95rem",
+      fontSize: "0.85rem",
+      whiteSpace: "nowrap",
+      padding: theme.spacing(1.5),
     },
   },
   "& .MuiTableBody-root .MuiTableRow-root": {
     transition: "all 0.3s",
     "&:hover": {
       backgroundColor: "rgba(1, 141, 165, 0.05)",
-      transform: "translateX(4px)",
     },
   },
 }));
@@ -490,29 +483,12 @@ const CreateLeaderForm = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
-      <Fade in timeout={800}>
-        <HeaderBox>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              textAlign: "center",
-              mb: 2,
-              textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            Gestión de Líderes
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ textAlign: "center", opacity: 0.95 }}
-          >
-            Administra y organiza los líderes del sistema electoral
-          </Typography>
-        </HeaderBox>
-      </Fade>
+      <PageHeader
+        title="Gestión de Líderes"
+        description="Administra y organiza los líderes del sistema electoral"
+      />
 
-      <Box sx={{ maxWidth: 1400, mx: "auto", px: { xs: 2, md: 3 } }}>
+      <Box>
         {/* Barra de herramientas */}
         <Grow in timeout={1000}>
           <Paper
@@ -591,10 +567,10 @@ const CreateLeaderForm = () => {
         {/* Tabla de líderes */}
         <Grow in timeout={1200}>
           <StyledTableContainer component={Paper}>
-            <Table>
+            <Table sx={{ minWidth: 1000 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox">
+                  <TableCell padding="checkbox" sx={{ width: 50 }}>
                     <Checkbox
                       indeterminate={
                         selectedLeaders.length > 0 &&
@@ -608,15 +584,15 @@ const CreateLeaderForm = () => {
                       sx={{ color: "#fff" }}
                     />
                   </TableCell>
-                  <TableCell>Identificación</TableCell>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>Apellido</TableCell>
-                  <TableCell>Departamento</TableCell>
-                  <TableCell>Ciudad</TableCell>
-                  <TableCell>Barrio</TableCell>
-                  <TableCell>Celular</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell align="center">Acciones</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Identificación</TableCell>
+                  <TableCell sx={{ minWidth: 130 }}>Nombre</TableCell>
+                  <TableCell sx={{ minWidth: 130 }}>Apellido</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Departamento</TableCell>
+                  <TableCell sx={{ minWidth: 100 }}>Ciudad</TableCell>
+                  <TableCell sx={{ minWidth: 100 }}>Barrio</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Celular</TableCell>
+                  <TableCell sx={{ minWidth: 150 }}>Email</TableCell>
+                  <TableCell align="center" sx={{ minWidth: 140 }}>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -641,43 +617,46 @@ const CreateLeaderForm = () => {
                     <TableRow
                       key={leader.lider_identificacion}
                       selected={isSelected(leader)}
+                      hover
                     >
-                      <TableCell padding="checkbox">
+                      <TableCell padding="checkbox" sx={{ width: 50 }}>
                         <Checkbox
                           checked={isSelected(leader)}
                           onChange={() => handleSelectLeader(leader)}
                         />
                       </TableCell>
-                      <TableCell>{leader.lider_identificacion}</TableCell>
-                      <TableCell>{leader.lider_nombre}</TableCell>
-                      <TableCell>{leader.lider_apellido}</TableCell>
-                      <TableCell>{leader.lider_departamento || "-"}</TableCell>
-                      <TableCell>{leader.lider_ciudad || "-"}</TableCell>
-                      <TableCell>{leader.lider_barrio || "-"}</TableCell>
-                      <TableCell>{leader.lider_celular}</TableCell>
-                      <TableCell>{leader.lider_email}</TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenViewModal(leader)}
-                          sx={{ color: "#018da5" }}
-                        >
-                          <Visibility />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenEditModal(leader)}
-                          sx={{ color: "#018da5" }}
-                        >
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDeleteModal(leader)}
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{leader.lider_identificacion}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{leader.lider_nombre}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{leader.lider_apellido}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{leader.lider_departamento || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{leader.lider_ciudad || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{leader.lider_barrio || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{leader.lider_celular}</TableCell>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{leader.lider_email}</TableCell>
+                      <TableCell align="center" sx={{  borderLeft: '0.5px solid #f3f3f3',  whiteSpace: 'nowrap'}}>
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenViewModal(leader)}
+                            sx={{ color: "#018da5" }}
+                          >
+                            <Visibility />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenEditModal(leader)}
+                            sx={{ color: "#018da5" }}
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenDeleteModal(leader)}
                           sx={{ color: "#d32f2f" }}
                         >
                           <Delete />
                         </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))

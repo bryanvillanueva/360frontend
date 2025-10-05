@@ -24,17 +24,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        {/* DrawerMenu debe actualizarse para mostrar los grupos: Dashboard, Crear, Cargas y Filtros/Reportes */}
-        <DrawerMenu />
-        <Box
-          sx={{
-            padding: "20px",
-            marginLeft: 35, // margen para desktop (ajustado para el drawer de 280px)
-            "@media (max-width: 600px)": {
-              marginLeft: 0, // sin margen en mobile
-            },
-          }}
-        >
+        <DrawerMenu>
           <Routes>
             {/* Dashboard */}
             <Route path="/" element={<Dashboard/>} />
@@ -57,7 +47,7 @@ function App() {
             <Route path="/filtros/votantes" element={<VotantesFiltro />} />
             <Route path="/filtros/pdf" element={<UploadPDF />} />
           </Routes>
-        </Box>
+        </DrawerMenu>
       </Router>
     </ThemeProvider>
   );

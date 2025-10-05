@@ -17,25 +17,20 @@ import ViewVotanteModal from "./modals/ViewVotanteModal";
 import SearchLeaderModal from "./modals/SearchLeaderModal";
 import SearchRecommendedModal from "./modals/SearchRecommendedModal";
 import SearchGroupModal from "./modals/SearchGroupModal";
-
-const HeaderBox = styled(Box)(({ theme }) => ({
-  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-  padding: theme.spacing(4),
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(3),
-  color: "#ffffffff",
-  boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
-}));
+import PageHeader from "./ui/PageHeader";
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.spacing(2),
   marginTop: theme.spacing(3),
+  overflowX: "auto",
   "& .MuiTableHead-root": {
     background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
     "& .MuiTableCell-head": {
-      color: "#ffffffff",
+      color: "#fff",
       fontWeight: 600,
-      fontSize: "0.95rem",
+      fontSize: "0.85rem",
+      whiteSpace: "nowrap",
+      padding: theme.spacing(1.5),
     },
   },
   "& .MuiTableBody-root .MuiTableRow-root": {
@@ -273,16 +268,12 @@ const CreateVotanteForm = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
-      <HeaderBox>
-        <Typography variant="h4" sx={{ fontWeight: 700, textAlign: "center", mb: 2 }}>
-          Gestión de Votantes
-        </Typography>
-        <Typography variant="body1" sx={{ textAlign: "center", opacity: 0.95 }}>
-          Administra y organiza los votantes del sistema electoral
-        </Typography>
-      </HeaderBox>
+      <PageHeader
+        title="Gestión de Votantes"
+        description="Administra y organiza los votantes del sistema electoral"
+      />
 
-      <Box sx={{ maxWidth: 1400, mx: "auto", px: 2 }}>
+      <Box>
         <Paper sx={{ p: 2, mb: 3, borderRadius: 2, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Filtrar por</InputLabel>
@@ -340,18 +331,18 @@ const CreateVotanteForm = () => {
         {/* Tabla con paginación - Usando RoundedPaper en lugar de Paper */}
         <RoundedPaper elevation={2}>
           <StyledTableContainer>
-            <Table sx={{ tableLayout: 'fixed' }}>
+            <Table sx={{ minWidth: 1000 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ width: '120px' }}>Identificación</TableCell>
-                  <TableCell sx={{ width: '120px' }}>Nombre</TableCell>
-                  <TableCell sx={{ width: '120px' }}>Apellido</TableCell>
-                  <TableCell sx={{ width: '120px' }}>Departamento</TableCell>
-                  <TableCell sx={{ width: '120px' }}>Ciudad</TableCell>
-                  <TableCell sx={{ width: '120px' }}>Barrio</TableCell>
-                  <TableCell sx={{ width: '150px' }}>Dirección</TableCell>
-                  <TableCell sx={{ width: '120px' }}>Líder</TableCell>
-                  <TableCell sx={{ width: '120px' }}>Acciones</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Identificación</TableCell>
+                  <TableCell sx={{ minWidth: 130 }}>Nombre</TableCell>
+                  <TableCell sx={{ minWidth: 130 }}>Apellido</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Departamento</TableCell>
+                  <TableCell sx={{ minWidth: 100 }}>Ciudad</TableCell>
+                  <TableCell sx={{ minWidth: 100 }}>Barrio</TableCell>
+                  <TableCell sx={{ minWidth: 150 }}>Dirección</TableCell>
+                  <TableCell sx={{ minWidth: 100 }}>Líder</TableCell>
+                  <TableCell align="center" sx={{ minWidth: 140}}>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -373,35 +364,35 @@ const CreateVotanteForm = () => {
                   </TableRow>
                 ) : (
                   votantesPaginados.map((v) => (
-                    <TableRow key={v.identificacion}>
-                      <TableCell>{v.identificacion}</TableCell>
-                      <TableCell>{v.nombre}</TableCell>
-                      <TableCell>{v.apellido}</TableCell>
-                      <TableCell>{v.departamento || "-"}</TableCell>
-                      <TableCell>{v.ciudad || "-"}</TableCell>
-                      <TableCell>{v.barrio || "-"}</TableCell>
-                      <TableCell>{v.direccion || "-"}</TableCell>
-                      <TableCell>{v.lider_identificacion || "-"}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <IconButton 
-                            size="small" 
+                    <TableRow key={v.identificacion} hover>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{v.identificacion}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.nombre}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.apellido}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.departamento || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.ciudad || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.barrio || "-"}</TableCell>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.direccion || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.lider_identificacion || "-"}</TableCell>
+                      <TableCell align="center" sx={{  borderLeft: '0.5px solid #f3f3f3', whiteSpace: 'nowrap' }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                          <IconButton
+                            size="small"
                             sx={{ color: "#018da5" }}
                             onClick={() => handleViewVotante(v)}
                             title="Ver detalles"
                           >
                             <Visibility />
                           </IconButton>
-                          <IconButton 
-                            size="small" 
+                          <IconButton
+                            size="small"
                             sx={{ color: "#018da5" }}
                             onClick={() => handleEditVotante(v)}
                             title="Editar votante"
                           >
                             <Edit />
                           </IconButton>
-                          <IconButton 
-                            size="small" 
+                          <IconButton
+                            size="small"
                             sx={{ color: "#d32f2f" }}
                             onClick={() => handleDeleteVotante(v)}
                             title="Eliminar votante"
