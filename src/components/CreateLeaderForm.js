@@ -22,6 +22,7 @@ import {
   Chip,
   Fade,
   Grow,
+  TablePagination,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -32,15 +33,14 @@ import {
   PersonAdd,
   Refresh,
   FilterList,
+  Visibility,
   KeyboardArrowLeft,
   KeyboardArrowRight,
-  Visibility,
 } from "@mui/icons-material";
 import axios from "axios";
 
 // Importar modales
 import LeaderFormModal from "./modals/LeaderFormModal";
-import DeleteLeaderModal from "./modals/DeleteLeaderModal";
 import SearchLeaderModal from "./modals/SearchLeaderModal";
 import ViewLeaderModal from "./modals/ViewLeaderModal";
 import BulkDeleteBar from "./modals/BulkDeleteBar";
@@ -108,18 +108,15 @@ const CreateLeaderForm = () => {
 
   // Estados para paginación
   const [page, setPage] = useState(0);
-  const [rowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Estados para modales
   const [formModalOpen, setFormModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [recommendedModalOpen, setRecommendedModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
-  const [votersAffected, setVotersAffected] = useState([]);
 
   // Estados para formularios
   const [formData, setFormData] = useState({
@@ -353,40 +350,11 @@ const CreateLeaderForm = () => {
     }
   };
 
-  // Abrir modal de eliminar
-  const handleOpenDeleteModal = async (leader) => {
-    setDeleteTarget(leader);
-    try {
-      const response = await axios.get(
-        `https://backend-node-soft360-production.up.railway.app/votantes/por-lider-detalle?lider=${leader.lider_identificacion}`
-      );
-      setVotersAffected(response.data.votantes || []);
-    } catch (error) {
-      setVotersAffected([]);
-    }
-    setDeleteModalOpen(true);
-  };
-
-  // Confirmar eliminación
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    setLoading(true);
-    try {
-      await axios.delete(
-        `https://backend-node-soft360-production.up.railway.app/lideres/${deleteTarget.lider_identificacion}`
-      );
-      showNotification("Líder eliminado con éxito");
-      setDeleteModalOpen(false);
-      setDeleteTarget(null);
-      fetchLeaders();
-    } catch (error) {
-      showNotification(
-        error.response?.data?.error || "Error al eliminar líder",
-        "error"
-      );
-    } finally {
-      setLoading(false);
-    }
+  // Eliminar l�der individual reutilizando el flujo masivo
+  const handleDeleteLeader = (leader) => {
+    setSelectedLeaders([leader]);
+    setSureDelete(false);
+    setBulkDeleteOpen(true);
   };
 
   // Abrir modal de ver detalles
@@ -471,6 +439,11 @@ const CreateLeaderForm = () => {
   // Funciones de paginación
   const handleChangePage = (newPage) => {
     setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   // Calcular datos paginados
@@ -651,11 +624,11 @@ const CreateLeaderForm = () => {
                           </IconButton>
                           <IconButton
                             size="small"
-                            onClick={() => handleOpenDeleteModal(leader)}
-                          sx={{ color: "#d32f2f" }}
-                        >
-                          <Delete />
-                        </IconButton>
+                            onClick={() => handleDeleteLeader(leader)}
+                            sx={{ color: "#d32f2f" }}
+                          >
+                            <Delete />
+                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -715,14 +688,6 @@ const CreateLeaderForm = () => {
           onRecommendedSelect={handleRecommendedSelect}
         />
 
-        <DeleteLeaderModal
-          open={deleteModalOpen}
-          onClose={() => setDeleteModalOpen(false)}
-          leaderData={deleteTarget}
-          votersAffected={votersAffected}
-          onConfirmDelete={handleConfirmDelete}
-          loading={loading}
-        />
 
         <SearchLeaderModal
           open={searchModalOpen}
@@ -770,3 +735,7 @@ const CreateLeaderForm = () => {
 };
 
 export default CreateLeaderForm;
+
+
+
+
