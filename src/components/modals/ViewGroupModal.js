@@ -21,6 +21,8 @@ import {
   LinearProgress,
   Chip,
   CircularProgress,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Close,
@@ -32,7 +34,37 @@ import {
   Assessment,
   Star,
   Group,
+  BarChart,
+  EmojiEvents,
+  FlashOn,
 } from "@mui/icons-material";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart as ReBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  AreaChart,
+  Area,
+  ComposedChart,
+  Line,
+  Treemap,
+  Scatter,
+  ScatterChart,
+  ZAxis,
+  LabelList,
+} from "recharts";
 import axios from "axios";
 
 const ViewGroupModal = ({
@@ -45,6 +77,7 @@ const ViewGroupModal = ({
   const [groupMetrics, setGroupMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentTab, setCurrentTab] = useState(0);
 
   useEffect(() => {
     if (open && selectedGrupo && grupoRecomendados.length > 0) {
@@ -208,17 +241,29 @@ const ViewGroupModal = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3 }}>
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        ) : groupMetrics ? (
-          <Grid container spacing={3}>
+      <DialogContent sx={{ p: 0 }}>
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 3 }}>
+          <Tabs value={currentTab} onChange={(e, v) => setCurrentTab(v)}>
+            <Tab label="Información General" icon={<Person />} iconPosition="start" />
+            <Tab label="Gráficos y Estadísticas" icon={<BarChart />} iconPosition="start" />
+          </Tabs>
+        </Box>
+
+        <Box sx={{ p: 3 }}>
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          ) : groupMetrics ? (
+            <>
+              {/* Tab 1: Información General */}
+              {currentTab === 0 && (
+                <Grid container spacing={3}>
             {/* Métricas Generales */}
             <Grid item xs={12}>
               <Card elevation={2}>
@@ -320,28 +365,34 @@ const ViewGroupModal = ({
                   <Divider sx={{ mb: 2 }} />
 
                   {groupMetrics.bestRecomendado && (
-                    <Box sx={{ mb: 3, p: 2, bgcolor: "success.light", borderRadius: 1, color: "success.contrastText" }}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        🏆 {groupMetrics.bestRecomendado.nombre} {groupMetrics.bestRecomendado.apellido}
-                      </Typography>
-                      <Typography variant="body2">
+                    <Box sx={{ mb: 3, p: 2, bgcolor: "#e8f5e9", borderRadius: 1, border: "1px solid #c8e6c9" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                        <EmojiEvents sx={{ color: "#2e7d32", fontSize: 24 }} />
+                        <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#1b5e20" }}>
+                          {groupMetrics.bestRecomendado.nombre} {groupMetrics.bestRecomendado.apellido}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: "#2e7d32" }}>
                         Tasa de cumplimiento: {groupMetrics.bestRecomendado.complianceRate?.toFixed(1)}%
                       </Typography>
-                      <Typography variant="caption">
+                      <Typography variant="caption" sx={{ color: "#388e3c" }}>
                         {groupMetrics.bestRecomendado.votersCount} votantes de {groupMetrics.bestRecomendado.expectedVoters} esperados
                       </Typography>
                     </Box>
                   )}
 
                   {groupMetrics.mostEfficientRecomendado && (
-                    <Box sx={{ p: 2, bgcolor: "info.light", borderRadius: 1, color: "info.contrastText" }}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        ⚡ {groupMetrics.mostEfficientRecomendado.nombre} {groupMetrics.mostEfficientRecomendado.apellido}
-                      </Typography>
-                      <Typography variant="body2">
+                    <Box sx={{ p: 2, bgcolor: "#e3f2fd", borderRadius: 1, border: "1px solid #bbdefb" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                        <FlashOn sx={{ color: "#1976d2", fontSize: 24 }} />
+                        <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#0d47a1" }}>
+                          {groupMetrics.mostEfficientRecomendado.nombre} {groupMetrics.mostEfficientRecomendado.apellido}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: "#1976d2" }}>
                         Mayor eficiencia de liderazgo
                       </Typography>
-                      <Typography variant="caption">
+                      <Typography variant="caption" sx={{ color: "#1976d2" }}>
                         {groupMetrics.mostEfficientRecomendado.leadershipEfficiency.toFixed(1)} votantes por líder
                       </Typography>
                     </Box>
@@ -366,9 +417,9 @@ const ViewGroupModal = ({
                     fullWidth
                     sx={{
                       mb: 2,
-                      background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+                      bgcolor: "#018da5",
                       "&:hover": {
-                        background: "linear-gradient(135deg, #0b9b8a 0%, #018da5 100%)",
+                        bgcolor: "#016f80",
                       },
                     }}
                   >
@@ -472,6 +523,676 @@ const ViewGroupModal = ({
               </Card>
             </Grid>
           </Grid>
+              )}
+
+              {/* Tab 2: Gráficos y Estadísticas */}
+              {currentTab === 1 && (
+                <Grid container spacing={3}>
+                  {/* Resumen Ejecutivo con Cards Modernas y Mini Sparklines */}
+                  <Grid item xs={12}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6} md={3}>
+                        <Card elevation={0} sx={{
+                          background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+                          color: "#fff",
+                          borderRadius: 2.5,
+                          position: "relative",
+                          overflow: "hidden",
+                          transition: "transform 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-4px)",
+                            boxShadow: "0 8px 24px rgba(1, 141, 165, 0.3)"
+                          },
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            top: -20,
+                            right: -20,
+                            width: 100,
+                            height: 100,
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.1)"
+                          }
+                        }}>
+                          <CardContent sx={{ position: "relative", zIndex: 1 }}>
+                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                              <Box>
+                                <Assessment sx={{ fontSize: 32, mb: 1, opacity: 0.9 }} />
+                                <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                                  {groupMetrics.groupComplianceRate.toFixed(1)}%
+                                </Typography>
+                                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: "0.75rem" }}>
+                                  Cumplimiento Grupal
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Card elevation={0} sx={{
+                          background: "linear-gradient(135deg, #67ddab 0%, #0b9b8a 100%)",
+                          color: "#fff",
+                          borderRadius: 2.5,
+                          position: "relative",
+                          overflow: "hidden",
+                          transition: "transform 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-4px)",
+                            boxShadow: "0 8px 24px rgba(103, 221, 171, 0.3)"
+                          },
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            top: -20,
+                            right: -20,
+                            width: 100,
+                            height: 100,
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.1)"
+                          }
+                        }}>
+                          <CardContent sx={{ position: "relative", zIndex: 1 }}>
+                            <SupervisorAccount sx={{ fontSize: 32, mb: 1, opacity: 0.9 }} />
+                            <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                              {groupMetrics.totalLeaders > 0 ? (groupMetrics.totalVoters / groupMetrics.totalLeaders).toFixed(1) : 0}
+                            </Typography>
+                            <Typography variant="caption" sx={{ opacity: 0.9, fontSize: "0.75rem" }}>
+                              Votantes por Líder
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Card elevation={0} sx={{
+                          background: "linear-gradient(135deg, #80daeb 0%, #018da5 100%)",
+                          color: "#fff",
+                          borderRadius: 2.5,
+                          position: "relative",
+                          overflow: "hidden",
+                          transition: "transform 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-4px)",
+                            boxShadow: "0 8px 24px rgba(128, 218, 235, 0.3)"
+                          },
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            top: -20,
+                            right: -20,
+                            width: 100,
+                            height: 100,
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.1)"
+                          }
+                        }}>
+                          <CardContent sx={{ position: "relative", zIndex: 1 }}>
+                            <EmojiEvents sx={{ fontSize: 32, mb: 1, opacity: 0.9 }} />
+                            <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                              {groupMetrics.leadersInCompliance}
+                            </Typography>
+                            <Typography variant="caption" sx={{ opacity: 0.9, fontSize: "0.75rem" }}>
+                              Líderes en Cumplimiento
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Card elevation={0} sx={{
+                          background: "linear-gradient(135deg, #909090 0%, #666 100%)",
+                          color: "#fff",
+                          borderRadius: 2.5,
+                          position: "relative",
+                          overflow: "hidden",
+                          transition: "transform 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-4px)",
+                            boxShadow: "0 8px 24px rgba(144, 144, 144, 0.3)"
+                          },
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            top: -20,
+                            right: -20,
+                            width: 100,
+                            height: 100,
+                            borderRadius: "50%",
+                            background: "rgba(255,255,255,0.1)"
+                          }
+                        }}>
+                          <CardContent sx={{ position: "relative", zIndex: 1 }}>
+                            <Group sx={{ fontSize: 32, mb: 1, opacity: 0.9 }} />
+                            <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                              {groupMetrics.totalRecomendados > 0 ? (groupMetrics.totalLeaders / groupMetrics.totalRecomendados).toFixed(1) : 0}
+                            </Typography>
+                            <Typography variant="caption" sx={{ opacity: 0.9, fontSize: "0.75rem" }}>
+                              Líderes por Recomendado
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    </Grid>
+                  </Grid>
+
+                  {/* Gráfico Compuesto Avanzado - Área + Línea + Barras */}
+                  <Grid item xs={12} md={8}>
+                    <Card elevation={0} sx={{
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 2.5,
+                      background: "#fff",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
+                    }}>
+                      <CardContent>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <BarChart sx={{ color: "#018da5" }} />
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                              Análisis de Rendimiento Integral
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label="Vista Combinada"
+                            size="small"
+                            sx={{ bgcolor: "#f0f9fa", color: "#018da5", fontWeight: 600 }}
+                          />
+                        </Box>
+                        <Divider sx={{ mb: 3 }} />
+                        <ResponsiveContainer width="100%" height={400}>
+                          <ComposedChart
+                            data={groupMetrics.enrichedRecomendados.map(r => ({
+                              nombre: `${r.nombre.split(' ')[0]} ${r.apellido.split(' ')[0]}`,
+                              votantes: r.votersCount,
+                              esperado: r.expectedVoters,
+                              cumplimiento: r.complianceRate || 0,
+                              eficiencia: r.leadershipEfficiency,
+                              lideres: r.leadersCount
+                            }))}
+                            margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+                          >
+                            <defs>
+                              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#80daeb" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#80daeb" stopOpacity={0.1}/>
+                              </linearGradient>
+                              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#018da5" stopOpacity={1}/>
+                                <stop offset="95%" stopColor="#0b9b8a" stopOpacity={0.9}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                            <XAxis
+                              dataKey="nombre"
+                              tick={{ fontSize: 11, fill: "#666" }}
+                              axisLine={{ stroke: "#e0e0e0" }}
+                            />
+                            <YAxis
+                              yAxisId="left"
+                              tick={{ fontSize: 11, fill: "#666" }}
+                              axisLine={{ stroke: "#e0e0e0" }}
+                              label={{ value: 'Votantes', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#666' } }}
+                            />
+                            <YAxis
+                              yAxisId="right"
+                              orientation="right"
+                              tick={{ fontSize: 11, fill: "#666" }}
+                              axisLine={{ stroke: "#e0e0e0" }}
+                              label={{ value: 'Cumplimiento %', angle: 90, position: 'insideRight', style: { fontSize: 11, fill: '#666' } }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                borderRadius: 12,
+                                border: "none",
+                                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                padding: 12
+                              }}
+                            />
+                            <Legend
+                              wrapperStyle={{ paddingTop: 20 }}
+                              iconType="circle"
+                            />
+                            <Area
+                              yAxisId="left"
+                              type="monotone"
+                              dataKey="esperado"
+                              fill="url(#areaGradient)"
+                              stroke="#80daeb"
+                              strokeWidth={2}
+                              name="Meta Esperada"
+                            />
+                            <Bar
+                              yAxisId="left"
+                              dataKey="votantes"
+                              fill="url(#barGradient)"
+                              name="Votantes Actuales"
+                              radius={[8, 8, 0, 0]}
+                              maxBarSize={50}
+                            />
+                            <Line
+                              yAxisId="right"
+                              type="monotone"
+                              dataKey="cumplimiento"
+                              stroke="#67ddab"
+                              strokeWidth={3}
+                              dot={{ fill: "#67ddab", r: 5 }}
+                              activeDot={{ r: 7 }}
+                              name="% Cumplimiento"
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Treemap - Distribución Jerárquica de Votantes */}
+                  <Grid item xs={12} md={4}>
+                    <Card elevation={0} sx={{
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 2.5,
+                      background: "#fff",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
+                    }}>
+                      <CardContent>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                          <Group sx={{ color: "#018da5" }} />
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                            Mapa de Distribución
+                          </Typography>
+                        </Box>
+                        <Divider sx={{ mb: 2 }} />
+                        <ResponsiveContainer width="100%" height={400}>
+                          <Treemap
+                            data={groupMetrics.enrichedRecomendados.map((r, idx) => ({
+                              name: `${r.nombre.split(' ')[0]} ${r.apellido.split(' ')[0]}`,
+                              size: r.votersCount,
+                              compliance: r.complianceRate || 0,
+                              leaders: r.leadersCount
+                            }))}
+                            dataKey="size"
+                            aspectRatio={4/3}
+                            stroke="#fff"
+                            strokeWidth={2}
+                            content={({ x, y, width, height, name, size, compliance, leaders }) => {
+                              const colors = ['#018da5', '#67ddab', '#80daeb', '#0b9b8a', '#909090'];
+                              const color = colors[Math.floor(Math.random() * colors.length)];
+
+                              return (
+                                <g>
+                                  <rect
+                                    x={x}
+                                    y={y}
+                                    width={width}
+                                    height={height}
+                                    fill={color}
+                                    opacity={0.8}
+                                    rx={8}
+                                  />
+                                  {width > 60 && height > 50 && (
+                                    <>
+                                      <text
+                                        x={x + width / 2}
+                                        y={y + height / 2 - 10}
+                                        textAnchor="middle"
+                                        fill="#fff"
+                                        fontSize={12}
+                                        fontWeight={600}
+                                      >
+                                        {name}
+                                      </text>
+                                      <text
+                                        x={x + width / 2}
+                                        y={y + height / 2 + 8}
+                                        textAnchor="middle"
+                                        fill="#fff"
+                                        fontSize={16}
+                                        fontWeight={700}
+                                      >
+                                        {size}
+                                      </text>
+                                      <text
+                                        x={x + width / 2}
+                                        y={y + height / 2 + 24}
+                                        textAnchor="middle"
+                                        fill="#fff"
+                                        fontSize={10}
+                                        opacity={0.9}
+                                      >
+                                        {compliance.toFixed(0)}% · {leaders}L
+                                      </text>
+                                    </>
+                                  )}
+                                </g>
+                              );
+                            }}
+                          >
+                            <Tooltip
+                              contentStyle={{
+                                borderRadius: 12,
+                                border: "none",
+                                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                padding: 12
+                              }}
+                              content={({ payload }) => {
+                                if (!payload || !payload[0]) return null;
+                                const data = payload[0].payload;
+                                return (
+                                  <Box sx={{ bgcolor: "#fff", p: 1.5, borderRadius: 2 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                      {data.name}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                      Votantes: {data.size}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                      Cumplimiento: {data.compliance.toFixed(1)}%
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                      Líderes: {data.leaders}
+                                    </Typography>
+                                  </Box>
+                                );
+                              }}
+                            />
+                          </Treemap>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Gráfico de Burbujas (Scatter) - Análisis Multidimensional */}
+                  <Grid item xs={12} md={7}>
+                    <Card elevation={0} sx={{
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 2.5,
+                      background: "#fff",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
+                    }}>
+                      <CardContent>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <TrendingUp sx={{ color: "#018da5" }} />
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                              Matriz de Rendimiento
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label="Vista Multidimensional"
+                            size="small"
+                            sx={{ bgcolor: "#f0f9fa", color: "#018da5", fontWeight: 600 }}
+                          />
+                        </Box>
+                        <Divider sx={{ mb: 2 }} />
+                        <Typography variant="caption" sx={{ color: "#666", display: "block", mb: 2 }}>
+                          Tamaño de burbuja = Número de líderes | Eje X = Votantes | Eje Y = % Cumplimiento
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={400}>
+                          <ScatterChart
+                            margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                          >
+                            <defs>
+                              <linearGradient id="bubbleGradient1" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#018da5" stopOpacity={0.8}/>
+                                <stop offset="100%" stopColor="#0b9b8a" stopOpacity={0.9}/>
+                              </linearGradient>
+                              <linearGradient id="bubbleGradient2" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#67ddab" stopOpacity={0.8}/>
+                                <stop offset="100%" stopColor="#0b9b8a" stopOpacity={0.9}/>
+                              </linearGradient>
+                              <linearGradient id="bubbleGradient3" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#80daeb" stopOpacity={0.8}/>
+                                <stop offset="100%" stopColor="#018da5" stopOpacity={0.9}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <XAxis
+                              type="number"
+                              dataKey="votantes"
+                              name="Votantes"
+                              tick={{ fontSize: 11, fill: "#666" }}
+                              axisLine={{ stroke: "#e0e0e0" }}
+                              label={{ value: 'Votantes Actuales', position: 'insideBottom', offset: -10, style: { fontSize: 11, fill: '#666' } }}
+                            />
+                            <YAxis
+                              type="number"
+                              dataKey="cumplimiento"
+                              name="Cumplimiento"
+                              tick={{ fontSize: 11, fill: "#666" }}
+                              axisLine={{ stroke: "#e0e0e0" }}
+                              label={{ value: '% Cumplimiento', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#666' } }}
+                            />
+                            <ZAxis
+                              type="number"
+                              dataKey="lideres"
+                              range={[100, 1000]}
+                              name="Líderes"
+                            />
+                            <Tooltip
+                              cursor={{ strokeDasharray: '3 3' }}
+                              contentStyle={{
+                                borderRadius: 12,
+                                border: "none",
+                                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                padding: 12
+                              }}
+                              content={({ payload }) => {
+                                if (!payload || !payload[0]) return null;
+                                const data = payload[0].payload;
+                                return (
+                                  <Box sx={{ bgcolor: "#fff", p: 1.5, borderRadius: 2 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                                      {data.nombre}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                      Votantes: {data.votantes}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                      Cumplimiento: {data.cumplimiento.toFixed(1)}%
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                      Líderes: {data.lideres}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                      Eficiencia: {data.eficiencia.toFixed(1)} v/líder
+                                    </Typography>
+                                  </Box>
+                                );
+                              }}
+                            />
+                            <Scatter
+                              name="Recomendados"
+                              data={groupMetrics.enrichedRecomendados.map(r => ({
+                                nombre: `${r.nombre.split(' ')[0]} ${r.apellido.split(' ')[0]}`,
+                                votantes: r.votersCount,
+                                cumplimiento: r.complianceRate || 0,
+                                lideres: r.leadersCount,
+                                eficiencia: r.leadershipEfficiency
+                              }))}
+                              fill="url(#bubbleGradient1)"
+                              shape="circle"
+                            >
+                              {groupMetrics.enrichedRecomendados.map((entry, index) => {
+                                const gradients = ['url(#bubbleGradient1)', 'url(#bubbleGradient2)', 'url(#bubbleGradient3)'];
+                                return (
+                                  <Cell key={`cell-${index}`} fill={gradients[index % gradients.length]} />
+                                );
+                              })}
+                            </Scatter>
+                          </ScatterChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Gráfico Radar Mejorado */}
+                  <Grid item xs={12} md={5}>
+                    <Card elevation={0} sx={{
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 2.5,
+                      background: "#fff",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
+                    }}>
+                      <CardContent>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                          <Assessment sx={{ color: "#018da5" }} />
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                            Análisis Radar
+                          </Typography>
+                        </Box>
+                        <Divider sx={{ mb: 2 }} />
+                        <ResponsiveContainer width="100%" height={400}>
+                          <RadarChart
+                            data={groupMetrics.enrichedRecomendados.slice(0, 5).map(r => ({
+                              recomendado: `${r.nombre.split(' ')[0]} ${r.apellido.split(' ')[0]}`,
+                              cumplimiento: r.complianceRate || 0,
+                              eficiencia: Math.min(r.leadershipEfficiency * 10, 100),
+                              lideres: Math.min(r.leadersCount * 20, 100),
+                            }))}
+                            margin={{ top: 20, right: 40, bottom: 20, left: 40 }}
+                          >
+                            <defs>
+                              <radialGradient id="radarGradient1">
+                                <stop offset="0%" stopColor="#018da5" stopOpacity={0.6}/>
+                                <stop offset="100%" stopColor="#018da5" stopOpacity={0.2}/>
+                              </radialGradient>
+                              <radialGradient id="radarGradient2">
+                                <stop offset="0%" stopColor="#67ddab" stopOpacity={0.6}/>
+                                <stop offset="100%" stopColor="#67ddab" stopOpacity={0.2}/>
+                              </radialGradient>
+                            </defs>
+                            <PolarGrid stroke="#e0e0e0" strokeWidth={1.5} />
+                            <PolarAngleAxis
+                              dataKey="recomendado"
+                              tick={{ fontSize: 11, fill: "#666", fontWeight: 500 }}
+                            />
+                            <PolarRadiusAxis
+                              angle={90}
+                              domain={[0, 100]}
+                              tick={{ fontSize: 10, fill: "#999" }}
+                            />
+                            <Radar
+                              name="Cumplimiento %"
+                              dataKey="cumplimiento"
+                              stroke="#018da5"
+                              fill="url(#radarGradient1)"
+                              strokeWidth={3}
+                              dot={{ fill: "#018da5", r: 4 }}
+                            />
+                            <Radar
+                              name="Eficiencia"
+                              dataKey="eficiencia"
+                              stroke="#67ddab"
+                              fill="url(#radarGradient2)"
+                              strokeWidth={3}
+                              dot={{ fill: "#67ddab", r: 4 }}
+                            />
+                            <Legend
+                              wrapperStyle={{ fontSize: 11, paddingTop: 15 }}
+                              iconType="circle"
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                borderRadius: 12,
+                                border: "none",
+                                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                fontSize: 12,
+                                padding: 12
+                              }}
+                            />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* Ranking de Cumplimiento Mejorado */}
+                  <Grid item xs={12} md={6}>
+                    <Card elevation={0} sx={{
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 2,
+                      background: "#fff"
+                    }}>
+                      <CardContent>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                          <EmojiEvents sx={{ color: "#018da5" }} />
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                            Ranking de Cumplimiento
+                          </Typography>
+                        </Box>
+                        <Divider sx={{ mb: 3 }} />
+                        <Box sx={{ maxHeight: 350, overflowY: "auto" }}>
+                          {groupMetrics.enrichedRecomendados.map((rec, idx) => (
+                            <Box key={idx} sx={{ mb: 3 }}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+                                <Box sx={{
+                                  minWidth: 32,
+                                  height: 32,
+                                  borderRadius: "50%",
+                                  background: idx === 0 ? "linear-gradient(135deg, #FFD700 0%, #FFA500 100%)" :
+                                             idx === 1 ? "linear-gradient(135deg, #C0C0C0 0%, #808080 100%)" :
+                                             idx === 2 ? "linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)" :
+                                             "linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontWeight: 700,
+                                  color: idx < 3 ? "#fff" : "#666",
+                                  fontSize: "0.875rem",
+                                  boxShadow: idx < 3 ? "0 2px 4px rgba(0,0,0,0.2)" : "none"
+                                }}>
+                                  {idx + 1}
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                                      {rec.nombre.split(' ')[0]} {rec.apellido.split(' ')[0]}
+                                    </Typography>
+                                    <Chip
+                                      label={`${rec.complianceRate?.toFixed(1)}%`}
+                                      size="small"
+                                      color={getComplianceColor(rec.complianceRate || 0)}
+                                      sx={{
+                                        height: 24,
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600
+                                      }}
+                                    />
+                                  </Box>
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={Math.min(rec.complianceRate || 0, 100)}
+                                    color={getComplianceColor(rec.complianceRate || 0)}
+                                    sx={{
+                                      height: 10,
+                                      borderRadius: 5,
+                                      bgcolor: "#f5f5f5",
+                                      "& .MuiLinearProgress-bar": {
+                                        borderRadius: 5,
+                                        background: rec.complianceRate >= 80
+                                          ? "linear-gradient(90deg, #4caf50 0%, #8bc34a 100%)"
+                                          : rec.complianceRate >= 60
+                                          ? "linear-gradient(90deg, #ff9800 0%, #ffc107 100%)"
+                                          : "linear-gradient(90deg, #f44336 0%, #e57373 100%)"
+                                      }
+                                    }}
+                                  />
+                                  <Box sx={{ display: "flex", gap: 2, mt: 0.5 }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                                      {rec.votersCount} / {rec.expectedVoters} votantes
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                                      {rec.leadersCount} líderes
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            </Box>
+                          ))}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+            </>
         ) : (
           // Vista original para cuando no hay métricas
           <Box>
@@ -484,9 +1205,9 @@ const ViewGroupModal = ({
                 startIcon={<Add />}
                 onClick={onAddRecomendados}
                 sx={{
-                  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+                  bgcolor: "#018da5",
                   "&:hover": {
-                    background: "linear-gradient(135deg, #0b9b8a 0%, #018da5 100%)",
+                    bgcolor: "#016f80",
                   },
                 }}
               >
@@ -524,6 +1245,7 @@ const ViewGroupModal = ({
             )}
           </Box>
         )}
+        </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
