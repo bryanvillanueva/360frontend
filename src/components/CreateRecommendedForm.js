@@ -46,19 +46,21 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.spacing(2),
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
   marginTop: theme.spacing(3),
+  overflowX: "auto",
   "& .MuiTableHead-root": {
     background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
     "& .MuiTableCell-head": {
       color: "#fff",
       fontWeight: 600,
-      fontSize: "0.95rem",
+      fontSize: "0.85rem",
+      whiteSpace: "nowrap",
+      padding: theme.spacing(1.5),
     },
   },
   "& .MuiTableBody-root .MuiTableRow-root": {
     transition: "all 0.3s",
     "&:hover": {
       backgroundColor: "rgba(1, 141, 165, 0.05)",
-      transform: "translateX(4px)",
     },
   },
 }));
@@ -362,7 +364,7 @@ const RecommendedManagement = () => {
         description="Administra y organiza los recomendados del sistema electoral"
       />
 
-      <Box sx={{ maxWidth: 1400, mx: "auto", px: { xs: 2, md: 3 } }}>
+      <Box>
         {/* Barra de herramientas */}
         <Grow in timeout={1000}>
           <Paper
@@ -432,10 +434,10 @@ const RecommendedManagement = () => {
         {/* Tabla de recomendados */}
         <Grow in timeout={1200}>
           <StyledTableContainer component={Paper}>
-            <Table>
+            <Table sx={{ minWidth: 1000 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox">
+                  <TableCell padding="checkbox" sx={{ width: 50 }}>
                     <Checkbox
                       indeterminate={
                         selectedRecomendados.length > 0 &&
@@ -449,15 +451,15 @@ const RecommendedManagement = () => {
                       sx={{ color: "#fff" }}
                     />
                   </TableCell>
-                  <TableCell>Identificación</TableCell>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>Apellido</TableCell>
-                  <TableCell>Departamento</TableCell>
-                  <TableCell>Ciudad</TableCell>
-                  <TableCell>Barrio</TableCell>
-                  <TableCell>Celular</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell align="center">Acciones</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Identificación</TableCell>
+                  <TableCell sx={{ minWidth: 130 }}>Nombre</TableCell>
+                  <TableCell sx={{ minWidth: 130 }}>Apellido</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Departamento</TableCell>
+                  <TableCell sx={{ minWidth: 100 }}>Ciudad</TableCell>
+                  <TableCell sx={{ minWidth: 100 }}>Barrio</TableCell>
+                  <TableCell sx={{ minWidth: 110 }}>Celular</TableCell>
+                  <TableCell sx={{ minWidth: 150 }}>Email</TableCell>
+                  <TableCell align="center" sx={{ minWidth: 140}}>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -482,43 +484,46 @@ const RecommendedManagement = () => {
                     <TableRow
                       key={recomendado.identificacion}
                       selected={isSelected(recomendado)}
+                      hover
                     >
-                      <TableCell padding="checkbox">
+                      <TableCell padding="checkbox" sx={{ width: 50 }}>
                         <Checkbox
                           checked={isSelected(recomendado)}
                           onChange={() => handleSelectRecomendado(recomendado)}
                         />
                       </TableCell>
-                      <TableCell>{recomendado.identificacion}</TableCell>
-                      <TableCell>{recomendado.nombre}</TableCell>
-                      <TableCell>{recomendado.apellido}</TableCell>
-                      <TableCell>{recomendado.departamento || "-"}</TableCell>
-                      <TableCell>{recomendado.ciudad || "-"}</TableCell>
-                      <TableCell>{recomendado.barrio || "-"}</TableCell>
-                      <TableCell>{recomendado.celular}</TableCell>
-                      <TableCell>{recomendado.email}</TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenViewModal(recomendado)}
-                          sx={{ color: "#018da5" }}
-                        >
-                          <Visibility />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenEditModal(recomendado)}
-                          sx={{ color: "#018da5" }}
-                        >
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteRecomendado(recomendado)}
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{recomendado.identificacion}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.nombre}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.apellido}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.departamento || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.ciudad || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.barrio || "-"}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.celular}</TableCell>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{recomendado.email}</TableCell>
+                      <TableCell align="center" sx={{ borderLeft: '0.5px solid #f3f3f3', whiteSpace: 'nowrap' }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenViewModal(recomendado)}
+                            sx={{ color: "#018da5" }}
+                          >
+                            <Visibility />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenEditModal(recomendado)}
+                            sx={{ color: "#018da5" }}
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteRecomendado(recomendado)}
                           sx={{ color: "#d32f2f" }}
                         >
                           <Delete />
                         </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))
