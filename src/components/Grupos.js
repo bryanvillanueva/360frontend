@@ -49,53 +49,42 @@ const StyledCard = styled(Card)(({ theme }) => ({
   height: "100%",
   display: "flex",
   flexDirection: "column",
-  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+  transition: "all 0.2s ease",
   cursor: "pointer",
-  borderRadius: theme.spacing(2),
-  background: "linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)",
+  borderRadius: theme.spacing(1.5),
+  background: "#fff",
+  border: "1px solid #e0e0e0",
   "&:hover": {
-    transform: "translateY(-8px)",
-    boxShadow: "0 12px 24px rgba(1, 141, 165, 0.15)",
-    "& .MuiCardContent-root": {
-      background: "linear-gradient(135deg, #ffffff 0%, #e0f7fa 100%)",
-    },
+    borderColor: "#018da5",
+    boxShadow: "0 4px 12px rgba(1, 141, 165, 0.1)",
   },
 }));
 
 const StatCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
+  padding: theme.spacing(2),
   textAlign: "center",
-  borderRadius: theme.spacing(2),
-  background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-  color: "#fff",
-  transition: "transform 0.3s ease",
+  borderRadius: theme.spacing(1.5),
+  background: "#fff",
+  border: "1px solid #e0e0e0",
+  transition: "all 0.2s ease",
   "&:hover": {
-    transform: "translateY(-4px)",
+    borderColor: "#018da5",
+    boxShadow: "0 2px 8px rgba(1, 141, 165, 0.1)",
   },
 }));
 
 
 const SearchBar = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-root": {
-    borderRadius: theme.spacing(3),
+    borderRadius: theme.spacing(1.5),
     backgroundColor: "#fff",
-    transition: "all 0.3s",
-    "&:hover": {
-      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-    },
-    "&.Mui-focused": {
-      boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
-    },
   },
 }));
 
 const StyledChip = styled(Chip)(({ theme }) => ({
-  borderRadius: theme.spacing(1),
-  fontWeight: 600,
-  transition: "all 0.3s",
-  "&:hover": {
-    transform: "scale(1.05)",
-  },
+  borderRadius: theme.spacing(0.75),
+  fontWeight: 500,
+  fontSize: "0.75rem",
 }));
 
 const Grupos = () => {
@@ -318,51 +307,43 @@ const Grupos = () => {
         />
 
         {/* Estadísticas */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grow in={true} timeout={500}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard elevation={3}>
-                <GroupIcon sx={{ fontSize: 40, mb: 1, opacity: 0.9 }} />
-                <Typography variant="h3" sx={{ fontWeight: "bold", mb: 1 }}>
-                  {totalGrupos || grupos.length}
-                </Typography>
-                <Typography variant="subtitle1">Total de Grupos</Typography>
-              </StatCard>
-            </Grid>
-          </Grow>
-          <Grow in={true} timeout={700}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard elevation={3} sx={{ background: "linear-gradient(135deg, #80daeb 0%, #67ddab 100%)" }}>
-                <PersonIcon sx={{ fontSize: 40, mb: 1, opacity: 0.9 }} />
-                <Typography variant="h3" sx={{ fontWeight: "bold", mb: 1 }}>
-                  {grupos.reduce((sum, g) => sum + (g.totalRecomendados || 0), 0)}
-                </Typography>
-                <Typography variant="subtitle1">Recomendados en Grupos</Typography>
-              </StatCard>
-            </Grid>
-          </Grow>
-          <Grow in={true} timeout={900}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard elevation={3} sx={{ background: "linear-gradient(135deg, #0b9b8a 0%, #67ddab 100%)" }}>
-                <SupervisorAccountIcon sx={{ fontSize: 40, mb: 1, opacity: 0.9 }} />
-                <Typography variant="h3" sx={{ fontWeight: "bold", mb: 1 }}>
-                  {grupos.reduce((sum, g) => sum + (g.totalLideres || 0), 0)}
-                </Typography>
-                <Typography variant="subtitle1">Líderes en Grupos</Typography>
-              </StatCard>
-            </Grid>
-          </Grow>
-          <Grow in={true} timeout={1100}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard elevation={3} sx={{ background: "linear-gradient(135deg, #909090 0%, #67ddab 100%)" }}>
-                <HowToVoteIcon sx={{ fontSize: 40, mb: 1, opacity: 0.9 }} />
-                <Typography variant="h3" sx={{ fontWeight: "bold", mb: 1 }}>
-                  {grupos.reduce((sum, g) => sum + (g.totalVotantes || 0), 0)}
-                </Typography>
-                <Typography variant="subtitle1">Votantes en Grupos</Typography>
-              </StatCard>
-            </Grid>
-          </Grow>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard elevation={0}>
+              <GroupIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+                {totalGrupos || grupos.length}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Total de Grupos</Typography>
+            </StatCard>
+          </Grid>
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard elevation={0}>
+              <PersonIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+                {grupos.reduce((sum, g) => sum + (g.totalRecomendados || 0), 0)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Recomendados</Typography>
+            </StatCard>
+          </Grid>
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard elevation={0}>
+              <SupervisorAccountIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+                {grupos.reduce((sum, g) => sum + (g.totalLideres || 0), 0)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Líderes</Typography>
+            </StatCard>
+          </Grid>
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard elevation={0}>
+              <HowToVoteIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+                {grupos.reduce((sum, g) => sum + (g.totalVotantes || 0), 0)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Votantes</Typography>
+            </StatCard>
+          </Grid>
         </Grid>
 
         {/* Barra de búsqueda y acciones */}
@@ -383,11 +364,11 @@ const Grupos = () => {
             startIcon={<AddIcon />}
             onClick={() => setOpenDialog(true)}
             sx={{
-              borderRadius: 3,
+              borderRadius: 2,
               px: 3,
-              background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+              bgcolor: "#018da5",
               "&:hover": {
-                background: "linear-gradient(135deg, #0b9b8a 0%, #018da5 100%)",
+                bgcolor: "#016f80",
               },
             }}
           >

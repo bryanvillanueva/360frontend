@@ -21,6 +21,7 @@ import {
   Fade,
   Grow,
   InputAdornment,
+  TablePagination,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -31,8 +32,6 @@ import {
   PersonAdd,
   Refresh,
   Visibility,
-  KeyboardArrowLeft,
-  KeyboardArrowRight,
 } from "@mui/icons-material";
 import axios from "axios";
 
@@ -103,7 +102,7 @@ const RecommendedManagement = () => {
 
   // Estados para paginación
   const [page, setPage] = useState(0);
-  const [rowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Estados para modales
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -252,25 +251,11 @@ const RecommendedManagement = () => {
     setViewModalOpen(true);
   };
 
-  // Eliminar recomendado individual
-  const handleDeleteRecomendado = async (recomendado) => {
-    if (window.confirm(`¿Estás seguro de eliminar el recomendado ${recomendado.nombre} ${recomendado.apellido}?`)) {
-      setLoading(true);
-      try {
-        await axios.delete(
-          `https://backend-node-soft360-production.up.railway.app/recomendados/${recomendado.identificacion}`
-        );
-        showNotification("Recomendado eliminado con éxito");
-        fetchRecomendados();
-      } catch (error) {
-        showNotification(
-          error.response?.data?.error || "Error al eliminar recomendado",
-          "error"
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
+  // Eliminar recomendado individual reutilizando el flujo masivo
+  const handleDeleteRecomendado = (recomendado) => {
+    setSelectedRecomendados([recomendado]);
+    setSureDelete(false);
+    setBulkDeleteOpen(true);
   };
 
   // Selección de recomendados para eliminación masiva
@@ -340,17 +325,19 @@ const RecommendedManagement = () => {
   };
 
   // Funciones de paginación
-  const handleChangePage = (newPage) => {
+  const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
   // Calcular datos paginados
   const paginatedRecomendados = filteredRecomendados.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-
-  const totalPages = Math.ceil(filteredRecomendados.length / rowsPerPage);
 
   const isSelected = (recomendado) =>
     selectedRecomendados.some(
@@ -531,41 +518,45 @@ const RecommendedManagement = () => {
               </TableBody>
             </Table>
 
-            {/* Paginación */}
-            {filteredRecomendados.length > rowsPerPage && (
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  p: 2,
-                  borderTop: "1px solid rgba(224, 224, 224, 1)"
-                }}
-              >
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Mostrando {page * rowsPerPage + 1} - {Math.min((page + 1) * rowsPerPage, filteredRecomendados.length)} de {filteredRecomendados.length} recomendados
-                </Typography>
-                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                  <IconButton
-                    onClick={() => handleChangePage(page - 1)}
-                    disabled={page === 0}
-                    size="small"
-                  >
-                    <KeyboardArrowLeft />
-                  </IconButton>
-                  <Typography variant="body2">
-                    Página {page + 1} de {totalPages}
-                  </Typography>
-                  <IconButton
-                    onClick={() => handleChangePage(page + 1)}
-                    disabled={page >= totalPages - 1}
-                    size="small"
-                  >
-                    <KeyboardArrowRight />
-                  </IconButton>
-                </Box>
-              </Box>
-            )}
+            {/* Paginaci�n */}
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              component="div"
+              count={filteredRecomendados.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="Filas por página:"
+              labelDisplayedRows={({ from, to, count }) =>
+                `${from}-${to} de ${count !== -1 ? count : `m�s de ${to}`}`
+              }
+              sx={{
+                borderTop: '1px solid rgba(224, 224, 224, 0.5)',
+                '& .MuiTablePagination-toolbar': {
+                  padding: '4px 16px 8px',
+                  minHeight: '44px',
+                  borderRadius: '0 0 16px 16px',
+                  backgroundColor: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                },
+                '& .MuiTablePagination-selectLabel': {
+                  margin: 0,
+                  marginRight: '8px'
+                },
+                '& .MuiTablePagination-displayedRows': {
+                  margin: 0
+                },
+                '& .MuiTablePagination-spacer': {
+                  display: 'none'
+                },
+                '& .MuiTablePagination-actions': {
+                  marginLeft: '8px'
+                }
+              }}
+            />
           </StyledTableContainer>
         </Grow>
 

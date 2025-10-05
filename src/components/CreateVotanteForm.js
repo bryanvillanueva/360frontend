@@ -3,7 +3,7 @@ import {
   Box, Button, Typography, CircularProgress, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, IconButton, TextField,
   InputAdornment, Snackbar, Alert, Skeleton, MenuItem, Select, FormControl, InputLabel,
-  TablePagination
+  TablePagination, Checkbox, Chip
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -17,6 +17,7 @@ import ViewVotanteModal from "./modals/ViewVotanteModal";
 import SearchLeaderModal from "./modals/SearchLeaderModal";
 import SearchRecommendedModal from "./modals/SearchRecommendedModal";
 import SearchGroupModal from "./modals/SearchGroupModal";
+import BulkDeleteBar from "./modals/BulkDeleteBar";
 import PageHeader from "./ui/PageHeader";
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
@@ -74,6 +75,9 @@ const CreateVotanteForm = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("todos");
   const [filterTarget, setFilterTarget] = useState(null);
+  const [selectedVotantes, setSelectedVotantes] = useState([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [sureDelete, setSureDelete] = useState(false);
 
   // Estados para paginación
   const [page, setPage] = useState(0);
@@ -84,11 +88,11 @@ const CreateVotanteForm = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  
+
   // Estados para datos de modales
   const [selectedVotante, setSelectedVotante] = useState(null);
   const [editVotanteData, setEditVotanteData] = useState(null);
-  
+
   // Estados para notificaciones
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -153,7 +157,7 @@ const CreateVotanteForm = () => {
         v.ciudad?.toLowerCase().includes(s) ||
         v.barrio?.toLowerCase().includes(s) ||
         v.direccion?.toLowerCase().includes(s) ||
-        v.lider_identificacion?.toLowerCase().includes(s)
+        v.lider_nombre?.toLowerCase().includes(s)
       );
     });
     setFilteredVotantes(filtered);
@@ -218,12 +222,6 @@ const CreateVotanteForm = () => {
     setEditModalOpen(true);
   };
 
-  // Manejar eliminar votante
-  const handleDeleteVotante = (votante) => {
-    setSelectedVotante(votante);
-    setDeleteModalOpen(true);
-  };
-
   // Manejar cambios en edición
   const handleEditChange = (e) => {
     const { name, value } = e.target;
@@ -250,7 +248,78 @@ const CreateVotanteForm = () => {
     }
   };
 
-  // Confirmar eliminación
+  // Selección de votantes
+  const handleSelectVotante = (votante) => {
+    const isSelected = selectedVotantes.some(
+      (v) => v.identificacion === votante.identificacion
+    );
+    if (isSelected) {
+      setSelectedVotantes(
+        selectedVotantes.filter((v) => v.identificacion !== votante.identificacion)
+      );
+    } else {
+      if (selectedVotantes.length < 50) {
+        setSelectedVotantes([...selectedVotantes, votante]);
+      } else {
+        showSnackbar("Máximo 50 votantes seleccionados", "info");
+      }
+    }
+  };
+
+  const isSelected = (votante) =>
+    selectedVotantes.some((v) => v.identificacion === votante.identificacion);
+
+  const handleSelectAll = () => {
+    if (selectedVotantes.length < votantesPaginados.length) {
+      const availableSlots = 50 - selectedVotantes.length;
+      if (availableSlots >= votantesPaginados.length) {
+        setSelectedVotantes([...selectedVotantes, ...votantesPaginados]);
+      } else {
+        showSnackbar("Máximo 50 votantes seleccionados", "info");
+      }
+    } else {
+      const currentPageIds = votantesPaginados.map((v) => v.identificacion);
+      setSelectedVotantes((prev) =>
+        prev.filter((v) => !currentPageIds.includes(v.identificacion))
+      );
+    }
+  };
+
+  // Eliminación individual reutilizando el flujo masivo
+  const handleDeleteVotante = (votante) => {
+    setSelectedVotantes([votante]);
+    setSureDelete(false);
+    setBulkDeleteOpen(true);
+  };
+
+  // Eliminación masiva
+  const handleBulkDelete = async () => {
+    setLoading(true);
+    try {
+      const ids = selectedVotantes.map((v) => v.identificacion);
+      await axios.delete(
+        "https://backend-node-soft360-production.up.railway.app/votantes/bulk",
+        { data: { ids } }
+      );
+      showSnackbar(
+        `${selectedVotantes.length} votante(s) eliminado(s) exitosamente`
+      );
+      setSelectedVotantes([]);
+      setBulkDeleteOpen(false);
+      setSureDelete(false);
+      fetchVotantes();
+    } catch (error) {
+      console.error("Error al eliminar votantes:", error);
+      showSnackbar(
+        error.response?.data?.error || "Error al eliminar votantes",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Confirmar eliminación (deprecated - se usa handleBulkDelete)
   const handleConfirmDelete = async () => {
     try {
       await axios.delete(
@@ -310,6 +379,14 @@ const CreateVotanteForm = () => {
             sx={{ flex: 1, minWidth: 250 }}
           />
 
+          {selectedVotantes.length > 0 && (
+            <Chip
+              label={`${selectedVotantes.length} seleccionado(s)`}
+              color="primary"
+              onDelete={() => setSelectedVotantes([])}
+            />
+          )}
+
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -323,6 +400,21 @@ const CreateVotanteForm = () => {
             Nuevo Votante
           </Button>
 
+          {selectedVotantes.length > 0 && (
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<Delete />}
+              onClick={() => setBulkDeleteOpen(true)}
+              sx={{
+                borderRadius: 3,
+                fontWeight: 600,
+              }}
+            >
+              Eliminar Seleccionados
+            </Button>
+          )}
+
           <IconButton onClick={fetchVotantes} color="primary">
             <Refresh />
           </IconButton>
@@ -334,6 +426,20 @@ const CreateVotanteForm = () => {
             <Table sx={{ minWidth: 1000 }}>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox" sx={{ width: 50 }}>
+                    <Checkbox
+                      indeterminate={
+                        selectedVotantes.length > 0 &&
+                        selectedVotantes.length < votantesPaginados.length
+                      }
+                      checked={
+                        votantesPaginados.length > 0 &&
+                        selectedVotantes.length >= votantesPaginados.length
+                      }
+                      onChange={handleSelectAll}
+                      sx={{ color: "#fff" }}
+                    />
+                  </TableCell>
                   <TableCell sx={{ minWidth: 110 }}>Identificación</TableCell>
                   <TableCell sx={{ minWidth: 130 }}>Nombre</TableCell>
                   <TableCell sx={{ minWidth: 130 }}>Apellido</TableCell>
@@ -342,21 +448,21 @@ const CreateVotanteForm = () => {
                   <TableCell sx={{ minWidth: 100 }}>Barrio</TableCell>
                   <TableCell sx={{ minWidth: 150 }}>Dirección</TableCell>
                   <TableCell sx={{ minWidth: 100 }}>Líder</TableCell>
-                  <TableCell align="center" sx={{ minWidth: 140}}>Acciones</TableCell>
+                  <TableCell align="center" sx={{ minWidth: 140 }}>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   [...Array(rowsPerPage)].map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell colSpan={9}>
+                      <TableCell colSpan={10}>
                         <Skeleton variant="rectangular" height={40} />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : votantesPaginados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">
+                    <TableCell colSpan={10} align="center">
                       <Typography variant="body1" sx={{ py: 3 }}>
                         No se encontraron votantes
                       </Typography>
@@ -364,7 +470,13 @@ const CreateVotanteForm = () => {
                   </TableRow>
                 ) : (
                   votantesPaginados.map((v) => (
-                    <TableRow key={v.identificacion} hover>
+                    <TableRow key={v.identificacion} hover selected={isSelected(v)}>
+                      <TableCell padding="checkbox" sx={{ width: 50 }}>
+                        <Checkbox
+                          checked={isSelected(v)}
+                          onChange={() => handleSelectVotante(v)}
+                        />
+                      </TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{v.identificacion}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.nombre}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.apellido}</TableCell>
@@ -372,8 +484,8 @@ const CreateVotanteForm = () => {
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.ciudad || "-"}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.barrio || "-"}</TableCell>
                       <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.direccion || "-"}</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.lider_identificacion || "-"}</TableCell>
-                      <TableCell align="center" sx={{  borderLeft: '0.5px solid #f3f3f3', whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{[v.lider_nombre, v.lider_apellido, "( CC: ",v.lider_identificacion,")"].filter(Boolean).join(' ') || "-"}</TableCell>
+                      <TableCell align="center" sx={{ borderLeft: '0.5px solid #f3f3f3', whiteSpace: 'nowrap' }}>
                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                           <IconButton
                             size="small"
@@ -524,6 +636,20 @@ const CreateVotanteForm = () => {
         />
       )}
 
+      {/* Barra de eliminación masiva */}
+      <BulkDeleteBar
+        open={bulkDeleteOpen}
+        selectedCount={selectedVotantes.length}
+        onCancel={() => {
+          setBulkDeleteOpen(false);
+          setSureDelete(false);
+        }}
+        onDelete={handleBulkDelete}
+        sure={sureDelete}
+        setSure={setSureDelete}
+        max={50}
+      />
+
       {/* Snackbar para notificaciones */}
       <Snackbar
         open={snackbar.open}
@@ -531,8 +657,8 @@ const CreateVotanteForm = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
