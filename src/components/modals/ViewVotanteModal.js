@@ -72,6 +72,7 @@ const ViewVotanteModal = ({ open, onClose, votante }) => {
       fetchIncidencias();
       fetchVariantes();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, votante]);
 
   const fetchVotanteDetails = async () => {

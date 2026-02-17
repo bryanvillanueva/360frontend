@@ -43,10 +43,7 @@ import {
   ExpandLess,
 } from "@mui/icons-material";
 import {
-  PieChart,
-  Pie,
   Cell,
-  BarChart as ReBarChart,
   Bar,
   XAxis,
   YAxis,
@@ -59,7 +56,6 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  AreaChart,
   Area,
   ComposedChart,
   Line,
@@ -67,7 +63,6 @@ import {
   Scatter,
   ScatterChart,
   ZAxis,
-  LabelList,
 } from "recharts";
 import axios from "axios";
 import theme from "../../theme";
@@ -98,6 +93,7 @@ const ViewGroupModal = ({
       setExpandedLeaders({});
       setLeaderVoters({});
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, selectedGrupo, grupoRecomendados]);
 
   const toggleRecomendado = (id) => {

@@ -40,6 +40,7 @@ const AddRecomendadoModal = ({ open, onClose, grupo, onRecomendadoAdded }) => {
     } else {
       setSearchResults([]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
   const searchRecomendados = async () => {

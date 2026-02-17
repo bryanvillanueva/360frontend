@@ -31,6 +31,7 @@ const SearchLeaderModal = ({ open, onClose, onSelectLeader }) => {
     if (open && !initialLoad) {
       loadInitialLeaders();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Función para normalizar la estructura de datos de líderes

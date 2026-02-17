@@ -4,7 +4,6 @@ import {
   Typography,
   Grid,
   Paper,
-  CircularProgress,
   Card,
   CardContent,
   CardActions,
@@ -35,7 +34,6 @@ import PersonIcon from "@mui/icons-material/Person";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import SearchIcon from "@mui/icons-material/Search";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import PageHeader from "./ui/PageHeader";
 
@@ -99,7 +97,7 @@ const Grupos = () => {
   const [openAddRecomendadoDialog, setOpenAddRecomendadoDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [grupoRecomendados, setGrupoRecomendados] = useState([]);
-  const [grupoCompleto, setGrupoCompleto] = useState([]);
+  const [grupoCompleto, setGrupoCompleto] = useState([]); // eslint-disable-line no-unused-vars
   const [searchTerm, setSearchTerm] = useState("");
   const [editData, setEditData] = useState({ nombre: "", descripcion: "" });
   const [createData, setCreateData] = useState({ nombre: "", descripcion: "" });
@@ -109,6 +107,7 @@ const Grupos = () => {
   useEffect(() => {
     fetchGrupos();
     fetchTotalGrupos();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchGrupos = async () => {

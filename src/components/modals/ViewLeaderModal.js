@@ -26,8 +26,6 @@ import {
 import {
   Close,
   Person,
-  Group,
-  TrendingUp,
   Assessment,
   LocationOn,
   Email,
@@ -54,6 +52,7 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
     if (!open) {
       setVotersExpanded(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, leaderData]);
 
   const fetchLeaderDetails = async () => {

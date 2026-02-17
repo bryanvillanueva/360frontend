@@ -54,6 +54,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Initialize Mapbox map when data is ready

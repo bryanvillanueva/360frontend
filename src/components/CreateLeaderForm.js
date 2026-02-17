@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Typography,
-  CircularProgress,
   Table,
   TableBody,
   TableCell,
@@ -18,22 +17,17 @@ import {
   Alert,
   Skeleton,
   Checkbox,
-  Toolbar,
   Chip,
-  Fade,
   Grow,
-  TablePagination,
   alpha,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
   Edit,
   Delete,
-  Add,
   Search as SearchIcon,
   PersonAdd,
   Refresh,
-  FilterList,
   Visibility,
   KeyboardArrowLeft,
   KeyboardArrowRight,
@@ -46,7 +40,6 @@ import LeaderFormModal from "./modals/LeaderFormModal";
 import SearchLeaderModal from "./modals/SearchLeaderModal";
 import ViewLeaderModal from "./modals/ViewLeaderModal";
 import BulkDeleteBar from "./modals/BulkDeleteBar";
-import RecommendedFormModal from "./modals/RecommendedFormModal";
 import PageHeader from "./ui/PageHeader";
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
@@ -110,13 +103,12 @@ const CreateLeaderForm = () => {
 
   // Estados para paginación
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(10);
 
   // Estados para modales
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [recommendedModalOpen, setRecommendedModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [viewTarget, setViewTarget] = useState(null);
 
@@ -136,14 +128,6 @@ const CreateLeaderForm = () => {
     original_identificacion: "",
   });
 
-  const [recommendedFormData, setRecommendedFormData] = useState({
-    identificacion: "",
-    nombre: "",
-    apellido: "",
-    celular: "",
-    email: "",
-  });
-
   const [recomendadoData, setRecomendadoData] = useState(null);
 
   // Estado para notificaciones
@@ -156,6 +140,7 @@ const CreateLeaderForm = () => {
   // Cargar líderes al montar
   useEffect(() => {
     fetchLeaders();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Obtener líderes
@@ -441,11 +426,6 @@ const CreateLeaderForm = () => {
   // Funciones de paginación
   const handleChangePage = (newPage) => {
     setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
   };
 
   // Calcular datos paginados
