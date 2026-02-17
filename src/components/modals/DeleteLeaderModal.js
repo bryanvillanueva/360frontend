@@ -28,13 +28,13 @@ const DeleteLeaderModal = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle
-        sx={{
-          background: "linear-gradient(135deg, #d32f2f 0%, #f44336 100%)",
+        sx={(theme) => ({
+          background: theme.palette.error.main,
           color: "#fff",
           display: "flex",
           alignItems: "center",
           gap: 1,
-        }}
+        })}
       >
         <WarningIcon />
         Confirmar Eliminación de Líder

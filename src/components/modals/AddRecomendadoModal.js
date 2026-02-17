@@ -190,7 +190,7 @@ const AddRecomendadoModal = ({ open, onClose, grupo, onRecomendadoAdded }) => {
                     }}
                   >
                     <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: selected ? "primary.main" : "#018da5" }}>
+                      <Avatar sx={{ bgcolor: "primary.main" }}>
                         {selected ? <CheckIcon /> : <PersonIcon />}
                       </Avatar>
                     </ListItemAvatar>

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: mejoras visuales profesionales en Dashboard y Gráficos de Grupos\n\n## Dashboard Mejorado\n- ✨ KPIs principales con cards con gradientes y animaciones hover\n- 📊 8 métricas clave para monitoreo electoral:\n  * Tasa de cumplimiento de objetivos\n  * Eficiencia de líderes (votantes/líder)\n  * Conversión de estructura (líderes/recomendado)\n  * Alertas de líderes en riesgo\n- 📈 Gráficos profesionales implementados:\n  * AreaChart con gradientes para tendencias de crecimiento\n  * Donut Chart para distribución por departamentos\n  * BarChart horizontal para top ciudades\n  * ComposedChart (barras + línea) para rendimiento de grupos\n  * Rankings visuales con medallas oro/plata/bronce\n  * Sistema de alertas para líderes bajo rendimiento\n\n## Modal de Grupos - Tab Gráficos y Estadísticas\n- 🎨 Cards métricas ejecutivas con gradientes y efectos hover\n- 📊 Gráficos avanzados de nivel empresarial:\n  * ComposedChart: Área + Barras + Línea (3 dimensiones)\n  * Treemap: Visualización jerárquica tipo dashboard ejecutivo\n  * ScatterChart con burbujas: 4 dimensiones simultáneas\n  * RadarChart mejorado con gradientes radiales\n  * Ranking visual con medallas y gradientes personalizados\n- ✨ Mejoras de diseño:\n  * Tooltips modernos sin bordes con sombras\n  * Gradientes en todas las visualizaciones\n  * Bordes redondeados (2.5px)\n  * Iconos descriptivos por sección\n  * Espaciado profesional consistente\n\n## Análisis de Datos\n- 🔍 Distribución territorial real (departamento/ciudad/barrio)\n- 📍 Top performers y bajo rendimiento\n- 📉 Tendencias temporales\n- 🎯 Cumplimiento vs objetivos\n- ⚡ Eficiencia por grupo\n\nTodos los gráficos usan la paleta de colores de la app: \n#018da5, #80daeb, #67ddab, #0b9b8a, #909090\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nchore: actualizar dependencias y ajustes de estilo en componentes\n\n## Dependencias\n- 📦 Actualizar recharts de 2.15.1 a 2.15.4 para gráficos mejorados\n\n## Ajustes de Estilo\n- 🎨 Grupos.js: Simplificar estilos de cards y mejorar consistencia\n  * Transiciones más suaves (0.2s ease)\n  * Bordes redondeados consistentes (1.5 spacing)\n  * Efectos hover más sutiles\n  * Eliminar gradientes excesivos en cards base\n\n## Componentes de Formularios\n- ✨ Mantener cambios de UX en CreateLeaderForm\n- ✨ Mantener cambios de UX en CreateRecommendedForm  \n- ✨ Mantener cambios de UX en CreateVotanteForm\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(mkdir:*)",
+      "Bash(gh repo list:*)",
+      "Bash(ls:*)",
+      "Bash(npx react-scripts build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

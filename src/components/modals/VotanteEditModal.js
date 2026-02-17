@@ -14,15 +14,9 @@ import {
   FormHelperText,
   Typography,
 } from "@mui/material";
-import axios from "axios";
+import useColombiaLocation from "../../hooks/useColombiaLocation";
 
 const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading }) => {
-  // Estados para datos de ubicación - API Colombia
-  const [departamentos, setDepartamentos] = useState([]);
-  const [todosMunicipios, setTodosMunicipios] = useState([]);
-  const [municipiosFiltrados, setMunicipiosFiltrados] = useState([]);
-  const [loadingDepartamentos, setLoadingDepartamentos] = useState(false);
-
   // Estados para manejo de dirección estructurada
   const [direccionParseada, setDireccionParseada] = useState({
     departamento: "",
@@ -31,77 +25,20 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
     direccion: ""
   });
 
-  // Cargar departamentos y municipios usando API Colombia
+  // Usar el custom hook para manejar ubicaciones de Colombia
+  const {
+    departamentos,
+    municipiosFiltrados,
+    loading: loadingDepartamentos,
+    error: errorDepartamentos
+  } = useColombiaLocation(open, direccionParseada.departamento);
+
+  // Mostrar error si hay problemas cargando ubicaciones
   useEffect(() => {
-    const fetchDepartamentosYMunicipios = async () => {
-      setLoadingDepartamentos(true);
-      try {
-        // Cargar departamentos
-        const deptosResponse = await axios.get("https://api-colombia.com/api/v1/Department");
-        
-        // FILTRAR BOGOTÁ DE LOS DEPARTAMENTOS (porque debe aparecer como ciudad en Cundinamarca)
-        const departamentosFiltrados = deptosResponse.data.filter(depto => 
-          depto.name !== "Bogotá D.C." && 
-          depto.name !== "Bogota" && 
-          depto.name !== "Bogotá"
-        );
-        
-        // ORDENAR DEPARTAMENTOS ALFABÉTICAMENTE
-        const departamentosOrdenados = departamentosFiltrados.sort((a, b) => 
-          a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-        );
-        setDepartamentos(departamentosOrdenados);
-
-        // Cargar todos los municipios
-        const municipiosResponse = await axios.get("https://api-colombia.com/api/v1/City");
-        
-        let municipiosProcesados = [...municipiosResponse.data];
-        
-        // BUSCAR EL ID DE CUNDINAMARCA
-        const cundinamarca = departamentosOrdenados.find(dept => 
-          dept.name === "Cundinamarca"
-        );
-        
-        if (cundinamarca) {
-          // VERIFICAR SI BOGOTÁ YA EXISTE EN LOS MUNICIPIOS DE CUNDINAMARCA
-          const bogotaExiste = municipiosProcesados.some(municipio => 
-            (municipio.name === "Bogotá" || 
-             municipio.name === "Bogotá D.C." || 
-             municipio.name === "Bogota") && 
-            municipio.departmentId === cundinamarca.id
-          );
-          
-          // SI BOGOTÁ NO EXISTE COMO MUNICIPIO DE CUNDINAMARCA, AGREGARLA
-          if (!bogotaExiste) {
-            const bogotaMunicipio = {
-              id: 999999, // ID temporal único
-              name: "Bogotá D.C.",
-              description: "Capital de Colombia",
-              departmentId: cundinamarca.id,
-              department: cundinamarca
-            };
-            municipiosProcesados.push(bogotaMunicipio);
-          }
-        }
-        
-        // ORDENAR MUNICIPIOS ALFABÉTICAMENTE
-        const municipiosOrdenados = municipiosProcesados.sort((a, b) => 
-          a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-        );
-        setTodosMunicipios(municipiosOrdenados);
-        
-      } catch (error) {
-        console.error("Error al cargar datos de ubicación:", error);
-        alert("Error al cargar la información de ubicación. Verifica tu conexión a internet.");
-      } finally {
-        setLoadingDepartamentos(false);
-      }
-    };
-
-    if (open) {
-      fetchDepartamentosYMunicipios();
+    if (errorDepartamentos) {
+      alert(errorDepartamentos);
     }
-  }, [open]);
+  }, [errorDepartamentos]);
 
   // Parsear dirección existente cuando se abre el modal
   useEffect(() => {
@@ -110,31 +47,6 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
       setDireccionParseada(parsed);
     }
   }, [open, votante?.direccion]);
-
-  // Filtrar municipios cuando se selecciona un departamento
-  useEffect(() => {
-    if (!direccionParseada.departamento) {
-      setMunicipiosFiltrados([]);
-      return;
-    }
-
-    // Buscar el ID del departamento seleccionado
-    const departamentoSeleccionado = departamentos.find(
-      dept => dept.name === direccionParseada.departamento
-    );
-    
-    if (!departamentoSeleccionado) {
-      setMunicipiosFiltrados([]);
-      return;
-    }
-
-    // Filtrar municipios por departamento Y ORDENAR ALFABÉTICAMENTE
-    const municipiosDelDepartamento = todosMunicipios
-      .filter(municipio => municipio.departmentId === departamentoSeleccionado.id)
-      .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
-
-    setMunicipiosFiltrados(municipiosDelDepartamento);
-  }, [direccionParseada.departamento, departamentos, todosMunicipios]);
 
   // Parsear dirección existente
   const parsearDireccionExistente = (direccionCompleta) => {
@@ -155,18 +67,10 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
       if (municipioMatch) resultado.municipio = municipioMatch[1].trim();
       if (barrioMatch) resultado.barrio = barrioMatch[1].trim();
       if (direccionMatch) resultado.direccion = direccionMatch[1].trim();
-      
-      // SI EL MUNICIPIO ES BOGOTÁ PERO EL DEPARTAMENTO NO ES CUNDINAMARCA, CORREGIRLO
-      if ((resultado.municipio === "Bogotá" || 
-           resultado.municipio === "Bogotá D.C." || 
-           resultado.municipio === "Bogota") && 
-          resultado.departamento !== "Cundinamarca") {
-        resultado.departamento = "Cundinamarca";
-      }
     } catch (error) {
       console.error("Error al parsear dirección:", error);
     }
-    
+
     return resultado;
   };
 
@@ -186,33 +90,75 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
   // Manejar cambios en los campos de ubicación
   const handleLocationChange = (e) => {
     const { name, value } = e.target;
-    
+
+    // NO convertir a mayúsculas departamento y ciudad (vienen de la API con formato específico)
+    // Solo convertir barrio y dirección
+    let processedValue = value;
+    if (name !== "departamento" && name !== "municipio") {
+      processedValue = value.toUpperCase();
+    }
+
     if (name === "departamento") {
       setDireccionParseada(prev => ({
         ...prev,
-        [name]: value,
+        [name]: processedValue,
         municipio: "",
         barrio: ""
       }));
     } else if (name === "municipio") {
       setDireccionParseada(prev => ({
         ...prev,
-        [name]: value,
+        [name]: processedValue,
         barrio: ""
       }));
     } else {
       setDireccionParseada(prev => ({
         ...prev,
-        [name]: value
+        [name]: processedValue
       }));
     }
   };
 
+  // Manejar cambios en campos normales con validaciones
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
+
+    // Convertir a mayúsculas todos los campos excepto email
+    let processedValue = value;
+    if (name !== "email") {
+      processedValue = value.toUpperCase();
+    }
+
+    // Validación de celular (solo números, máximo 10)
+    if (name === "celular") {
+      processedValue = processedValue.replace(/\D/g, "");
+      if (processedValue.length > 10) {
+        processedValue = processedValue.slice(0, 10);
+      }
+    }
+
+    // Crear evento sintético con valor procesado
+    const syntheticEvent = {
+      target: {
+        name,
+        value: processedValue
+      }
+    };
+
+    onChange(syntheticEvent);
+  };
+
   // Manejar guardado con dirección estructurada
   const handleSave = () => {
+    // Validaciones antes de guardar
+    if (votante.celular && votante.celular.length !== 10) {
+      alert("El celular debe tener exactamente 10 dígitos");
+      return;
+    }
+
     // Construir la dirección completa y actualizar el votante
     const direccionCompleta = construirDireccionCompleta();
-    
+
     // Crear evento sintético para mantener compatibilidad
     const syntheticEvent = {
       target: {
@@ -220,10 +166,10 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
         value: direccionCompleta
       }
     };
-    
+
     // Actualizar la dirección en el objeto votante
     onChange(syntheticEvent);
-    
+
     // Llamar a onSave después de un breve delay para asegurar que el estado se actualice
     setTimeout(() => {
       onSave();
@@ -235,10 +181,10 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle
-        sx={{
-          background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+        sx={(theme) => ({
+          background: theme.palette.primary.main,
           color: "#fff",
-        }}
+        })}
       >
         Editar Votante
       </DialogTitle>
@@ -249,17 +195,19 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
               label="Identificación"
               name="identificacion"
               value={votante.identificacion}
-              onChange={onChange}
+              onChange={handleFieldChange}
               fullWidth
               required
               disabled
+              helperText="No se puede modificar"
             />
             <TextField
               label="Email"
               name="email"
               value={votante.email || ""}
-              onChange={onChange}
+              onChange={handleFieldChange}
               fullWidth
+              helperText="Opcional"
             />
           </Box>
 
@@ -268,7 +216,7 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
               label="Nombre"
               name="nombre"
               value={votante.nombre}
-              onChange={onChange}
+              onChange={handleFieldChange}
               fullWidth
               required
             />
@@ -276,7 +224,7 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
               label="Apellido"
               name="apellido"
               value={votante.apellido}
-              onChange={onChange}
+              onChange={handleFieldChange}
               fullWidth
               required
             />
@@ -286,13 +234,15 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
             label="Celular"
             name="celular"
             value={votante.celular || ""}
-            onChange={onChange}
+            onChange={handleFieldChange}
             fullWidth
             sx={{ mb: 2 }}
+            helperText="Debe tener exactamente 10 dígitos (opcional)"
+            error={votante.celular && votante.celular.length > 0 && votante.celular.length !== 10}
           />
 
           {/* Información de ubicación con API Colombia */}
-          <Typography variant="h6" sx={{ mt: 2, mb: 2, color: "#018da5" }}>
+          <Typography variant="h6" sx={(theme) => ({ mt: 2, mb: 2, color: theme.palette.primary.main })}>
             Información de Ubicación
           </Typography>
 
@@ -379,9 +329,9 @@ const VotanteEditModal = ({ open, onClose, votante, onChange, onSave, loading })
           variant="contained"
           onClick={handleSave}
           disabled={loading}
-          sx={{
-            background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-          }}
+          sx={(theme) => ({
+            background: theme.palette.primary.main,
+          })}
         >
           {loading ? "Guardando..." : "Guardar Cambios"}
         </Button>

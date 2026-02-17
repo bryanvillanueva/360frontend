@@ -9,13 +9,12 @@ import {
   CircularProgress,
   TextField,
   Alert,
-  Box,
 } from "@mui/material";
 
-const VotanteDeleteModal = ({ open, onClose, votante, onDelete, loading }) => {
+const RecommendedDeleteModal = ({ open, onClose, recommended, onDelete, loading }) => {
   const [deleteReason, setDeleteReason] = useState("");
 
-  if (!votante) return null;
+  if (!recommended) return null;
 
   const handleDelete = () => {
     onDelete(deleteReason);
@@ -29,7 +28,7 @@ const VotanteDeleteModal = ({ open, onClose, votante, onDelete, loading }) => {
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle sx={(theme) => ({ color: theme.palette.error.main, fontWeight: 600 })}>
-        Confirmar Eliminación
+        Confirmar Eliminación de Recomendado
       </DialogTitle>
       <DialogContent>
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -37,10 +36,16 @@ const VotanteDeleteModal = ({ open, onClose, votante, onDelete, loading }) => {
         </Alert>
 
         <Typography sx={{ mb: 2 }}>
-          ¿Estás seguro de que deseas eliminar al votante{" "}
-          <strong>{votante.nombre} {votante.apellido}</strong> con ID{" "}
-          <strong>{votante.identificacion}</strong>?
+          ¿Estás seguro de que deseas eliminar al recomendado{" "}
+          <strong>{recommended.nombre} {recommended.apellido}</strong> con ID{" "}
+          <strong>{recommended.identificacion}</strong>?
         </Typography>
+
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Typography variant="caption">
+            Nota: Los líderes asociados a este recomendado se mantendrán activos.
+          </Typography>
+        </Alert>
 
         <TextField
           label="Motivo de eliminación"
@@ -49,7 +54,7 @@ const VotanteDeleteModal = ({ open, onClose, votante, onDelete, loading }) => {
           fullWidth
           value={deleteReason}
           onChange={(e) => setDeleteReason(e.target.value)}
-          placeholder="Ej: Duplicado, Error de registro, Fallecido, etc."
+          placeholder="Ej: Duplicado, Inactivo, Error de registro, etc."
           helperText="Especifica el motivo de la eliminación (opcional pero recomendado)"
           sx={{ mt: 2 }}
         />
@@ -71,4 +76,4 @@ const VotanteDeleteModal = ({ open, onClose, votante, onDelete, loading }) => {
   );
 };
 
-export default VotanteDeleteModal;
+export default RecommendedDeleteModal;

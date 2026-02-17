@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  alpha,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import axios from "axios";
@@ -52,11 +53,11 @@ const StyledCard = styled(Card)(({ theme }) => ({
   transition: "all 0.2s ease",
   cursor: "pointer",
   borderRadius: theme.spacing(1.5),
-  background: "#fff",
-  border: "1px solid #e0e0e0",
+  background: theme.palette.background.paper,
+  border: `1px solid ${theme.palette.grey[300]}`,
   "&:hover": {
-    borderColor: "#018da5",
-    boxShadow: "0 4px 12px rgba(1, 141, 165, 0.1)",
+    borderColor: theme.palette.primary.main,
+    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
   },
 }));
 
@@ -64,12 +65,12 @@ const StatCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   textAlign: "center",
   borderRadius: theme.spacing(1.5),
-  background: "#fff",
-  border: "1px solid #e0e0e0",
+  background: theme.palette.background.paper,
+  border: `1px solid ${theme.palette.grey[300]}`,
   transition: "all 0.2s ease",
   "&:hover": {
-    borderColor: "#018da5",
-    boxShadow: "0 2px 8px rgba(1, 141, 165, 0.1)",
+    borderColor: theme.palette.primary.main,
+    boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.1)}`,
   },
 }));
 
@@ -310,38 +311,38 @@ const Grupos = () => {
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={6} sm={6} md={3}>
             <StatCard elevation={0}>
-              <GroupIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+              <GroupIcon sx={{ fontSize: 28, mb: 0.5, color: "primary.main" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "text.primary" }}>
                 {totalGrupos || grupos.length}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Total de Grupos</Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.875rem" }}>Total de Grupos</Typography>
             </StatCard>
           </Grid>
           <Grid item xs={6} sm={6} md={3}>
             <StatCard elevation={0}>
-              <PersonIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+              <PersonIcon sx={{ fontSize: 28, mb: 0.5, color: "primary.main" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "text.primary" }}>
                 {grupos.reduce((sum, g) => sum + (g.totalRecomendados || 0), 0)}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Recomendados</Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.875rem" }}>Recomendados</Typography>
             </StatCard>
           </Grid>
           <Grid item xs={6} sm={6} md={3}>
             <StatCard elevation={0}>
-              <SupervisorAccountIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+              <SupervisorAccountIcon sx={{ fontSize: 28, mb: 0.5, color: "primary.main" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "text.primary" }}>
                 {grupos.reduce((sum, g) => sum + (g.totalLideres || 0), 0)}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Líderes</Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.875rem" }}>Líderes</Typography>
             </StatCard>
           </Grid>
           <Grid item xs={6} sm={6} md={3}>
             <StatCard elevation={0}>
-              <HowToVoteIcon sx={{ fontSize: 28, mb: 0.5, color: "#018da5" }} />
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "#333" }}>
+              <HowToVoteIcon sx={{ fontSize: 28, mb: 0.5, color: "primary.main" }} />
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5, color: "text.primary" }}>
                 {grupos.reduce((sum, g) => sum + (g.totalVotantes || 0), 0)}
               </Typography>
-              <Typography variant="body2" sx={{ color: "#666", fontSize: "0.875rem" }}>Votantes</Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.875rem" }}>Votantes</Typography>
             </StatCard>
           </Grid>
         </Grid>
@@ -363,14 +364,14 @@ const Grupos = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setOpenDialog(true)}
-            sx={{
+            sx={(theme) => ({
               borderRadius: 2,
               px: 3,
-              bgcolor: "#018da5",
+              bgcolor: theme.palette.primary.main,
               "&:hover": {
-                bgcolor: "#016f80",
+                bgcolor: theme.palette.primary.dark,
               },
-            }}
+            })}
           >
             Crear Grupo
           </Button>
@@ -384,7 +385,7 @@ const Grupos = () => {
                 <StyledCard elevation={3} onClick={() => handleViewGrupo(grupo)}>
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", mb: 2 }}>
-                      <Avatar sx={{ bgcolor: "#018da5", width: 56, height: 56 }}>
+                      <Avatar sx={(theme) => ({ bgcolor: theme.palette.primary.main, width: 56, height: 56 })}>
                         <GroupIcon />
                       </Avatar>
                       <StyledChip
@@ -417,7 +418,7 @@ const Grupos = () => {
                         icon={<HowToVoteIcon />}
                         label={`${grupo.totalVotantes || 0} Vot.`}
                         size="small"
-                        color="success"
+                        color="primary"
                       />
                     </Box>
                   </CardContent>
@@ -432,7 +433,7 @@ const Grupos = () => {
                     </Tooltip>
                     <Tooltip title="Agregar recomendados">
                       <IconButton
-                        color="success"
+                        color="primary"
                         onClick={() => {
                           setSelectedGrupo(grupo);
                           handleOpenAddRecomendado();

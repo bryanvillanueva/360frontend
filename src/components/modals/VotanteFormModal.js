@@ -8,7 +8,8 @@ import {
 import { Close } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
 import SearchLeaderModal from "./SearchLeaderModal";
-import axios from "axios";
+import axios from "../../services/axiosConfig";
+import useColombiaLocation from "../../hooks/useColombiaLocation";
 
 const VotanteFormModal = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -28,165 +29,81 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Estados para datos de ubicación - API Colombia
-  const [departamentos, setDepartamentos] = useState([]);
-  const [todosMunicipios, setTodosMunicipios] = useState([]);
-  const [municipiosFiltrados, setMunicipiosFiltrados] = useState([]);
-  const [loadingDepartamentos, setLoadingDepartamentos] = useState(false);
+  // Usar el custom hook para manejar ubicaciones de Colombia
+  const {
+    departamentos,
+    municipiosFiltrados,
+    loading: loadingDepartamentos,
+    error: errorDepartamentos
+  } = useColombiaLocation(open, formData.departamento);
 
-  // Cargar departamentos y municipios usando API Colombia
+  // Mostrar error si hay problemas cargando ubicaciones
   useEffect(() => {
-    const fetchDepartamentosYMunicipios = async () => {
-      setLoadingDepartamentos(true);
-      try {
-        // Cargar departamentos
-        const deptosResponse = await axios.get("https://api-colombia.com/api/v1/Department");
-        console.log("Departamentos obtenidos:", deptosResponse.data);
-        
-        // FILTRAR BOGOTÁ DE LOS DEPARTAMENTOS (porque debe aparecer como ciudad en Cundinamarca)
-        const departamentosFiltrados = deptosResponse.data.filter(depto => 
-          depto.name !== "Bogotá D.C." && 
-          depto.name !== "Bogota" && 
-          depto.name !== "Bogotá"
-        );
-        
-        // ORDENAR DEPARTAMENTOS ALFABÉTICAMENTE
-        const departamentosOrdenados = departamentosFiltrados.sort((a, b) => 
-          a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-        );
-        setDepartamentos(departamentosOrdenados);
-
-        // Cargar todos los municipios
-        const municipiosResponse = await axios.get("https://api-colombia.com/api/v1/City");
-        console.log("Municipios obtenidos:", municipiosResponse.data);
-        
-        let municipiosProcesados = [...municipiosResponse.data];
-        
-        // BUSCAR EL ID DE CUNDINAMARCA
-        const cundinamarca = departamentosOrdenados.find(dept => 
-          dept.name === "Cundinamarca"
-        );
-        
-        if (cundinamarca) {
-          // VERIFICAR SI BOGOTÁ YA EXISTE EN LOS MUNICIPIOS DE CUNDINAMARCA
-          const bogotaExiste = municipiosProcesados.some(municipio => 
-            (municipio.name === "Bogotá" || 
-             municipio.name === "Bogotá D.C." || 
-             municipio.name === "Bogota") && 
-            municipio.departmentId === cundinamarca.id
-          );
-          
-          // SI BOGOTÁ NO EXISTE COMO MUNICIPIO DE CUNDINAMARCA, AGREGARLA
-          if (!bogotaExiste) {
-            const bogotaMunicipio = {
-              id: 999999, // ID temporal único
-              name: "Bogotá D.C.",
-              description: "Capital de Colombia",
-              departmentId: cundinamarca.id,
-              department: cundinamarca
-            };
-            municipiosProcesados.push(bogotaMunicipio);
-            console.log("Bogotá agregada como municipio de Cundinamarca");
-          }
-        }
-        
-        // ORDENAR MUNICIPIOS ALFABÉTICAMENTE
-        const municipiosOrdenados = municipiosProcesados.sort((a, b) => 
-          a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-        );
-        setTodosMunicipios(municipiosOrdenados);
-        
-      } catch (error) {
-        console.error("Error al cargar datos de ubicación:", error);
-        alert("Error al cargar la información de ubicación. Verifica tu conexión a internet.");
-      } finally {
-        setLoadingDepartamentos(false);
-      }
-    };
-
-    if (open) {
-      fetchDepartamentosYMunicipios();
+    if (errorDepartamentos) {
+      alert(errorDepartamentos);
     }
-  }, [open]);
-
-  // Filtrar municipios cuando se selecciona un departamento
-  useEffect(() => {
-    if (!formData.departamento) {
-      setMunicipiosFiltrados([]);
-      return;
-    }
-
-    // Buscar el ID del departamento seleccionado
-    const departamentoSeleccionado = departamentos.find(
-      dept => dept.name === formData.departamento
-    );
-    
-    if (!departamentoSeleccionado) {
-      console.error("Departamento no encontrado:", formData.departamento);
-      setMunicipiosFiltrados([]);
-      return;
-    }
-
-    console.log("Departamento seleccionado:", departamentoSeleccionado);
-    console.log("ID del departamento:", departamentoSeleccionado.id);
-
-    // Filtrar municipios por departamento Y ORDENAR ALFABÉTICAMENTE
-    const municipiosDelDepartamento = todosMunicipios
-      .filter(municipio => municipio.departmentId === departamentoSeleccionado.id)
-      .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
-
-    console.log("Municipios filtrados para", formData.departamento, ":", municipiosDelDepartamento);
-    setMunicipiosFiltrados(municipiosDelDepartamento);
-  }, [formData.departamento, departamentos, todosMunicipios]);
-
-  // FUNCIÓN AUXILIAR PARA NORMALIZAR NOMBRES DE DEPARTAMENTOS
-  const normalizarNombreDepartamento = (nombre) => {
-    const normalizaciones = {
-      "Bogotá D.C.": "Cundinamarca",
-      "Bogotá": "Cundinamarca",
-      "Bogota": "Cundinamarca"
-    };
-    return normalizaciones[nombre] || nombre;
-  };
+  }, [errorDepartamentos]);
 
   // Construir dirección completa
   const construirDireccionCompleta = () => {
     const { departamento, ciudad, barrio, direccion } = formData;
     let direccionCompleta = "";
-    
-    // Normalizar el departamento antes de construir la dirección
-    const departamentoNormalizado = normalizarNombreDepartamento(departamento);
-    
-    if (departamentoNormalizado) direccionCompleta += `Departamento: ${departamentoNormalizado}, `;
+
+    if (departamento) direccionCompleta += `Departamento: ${departamento}, `;
     if (ciudad) direccionCompleta += `Ciudad: ${ciudad}, `;
     if (barrio) direccionCompleta += `Barrio: ${barrio}, `;
     if (direccion) direccionCompleta += `Dirección: ${direccion}`;
-    
+
     return direccionCompleta;
   };
 
   // Manejar cambios de formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
+    // Convertir a mayúsculas todos los campos de texto excepto email, departamento y ciudad
+    // (departamento y ciudad vienen de la API con formato específico)
+    let processedValue = value || ""; // Proteger contra null/undefined
+    if (name !== "email" && name !== "departamento" && name !== "ciudad") {
+      processedValue = processedValue.toUpperCase();
+    }
+
+    // Validación de identificación
+    if (name === "identificacion") {
+      // Solo permitir números
+      processedValue = processedValue.replace(/\D/g, "");
+      // No permitir que inicie con cero
+      if (processedValue.startsWith("0")) {
+        return;
+      }
+    }
+
+    // Validación de celular (solo números, máximo 10)
+    if (name === "celular") {
+      processedValue = processedValue.replace(/\D/g, "");
+      if (processedValue.length > 10) {
+        processedValue = processedValue.slice(0, 10);
+      }
+    }
+
     // Si cambia el departamento, limpiar ciudad, barrio y dirección
     if (name === "departamento") {
-      setFormData((prev) => ({ 
-        ...prev, 
-        [name]: value,
+      setFormData((prev) => ({
+        ...prev,
+        [name]: processedValue,
         ciudad: "",
         barrio: "",
         direccion: ""
       }));
     } else if (name === "ciudad") {
-      setFormData((prev) => ({ 
-        ...prev, 
-        [name]: value,
+      setFormData((prev) => ({
+        ...prev,
+        [name]: processedValue,
         barrio: "",
         direccion: ""
       }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: processedValue }));
     }
   };
 
@@ -195,7 +112,7 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
     setLeaderData(leader);
     setFormData((prev) => ({
       ...prev,
-      lider_identificacion: leader.lider_identificacion,
+      lider_identificacion: leader.identificacion, // Correcto: usar 'identificacion' no 'lider_identificacion'
     }));
     setSearchModalOpen(false);
   };
@@ -203,24 +120,82 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
   // Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validaciones antes de enviar
+    if (formData.identificacion.length < 4) {
+      alert("La identificación debe tener mínimo 4 dígitos");
+      return;
+    }
+
+    if (formData.celular && formData.celular.length !== 10) {
+      alert("El celular debe tener exactamente 10 dígitos");
+      return;
+    }
+
+    if (!formData.lider_identificacion) {
+      alert("Debes seleccionar un líder para reportar el votante");
+      return;
+    }
+
     setLoading(true);
     try {
       // Construir la dirección completa estructurada
       const direccionCompleta = construirDireccionCompleta();
-      const datosEnvio = {
-        ...formData,
-        direccion: direccionCompleta
+
+      // ARQUITECTURA DE STAGING: Usar POST /capturas
+      // El trigger del backend se encargará de:
+      // 1. Crear votante canónico (si no existe)
+      // 2. Crear asignación N:M
+      // 3. Detectar duplicados/incidencias
+      // 4. Crear variantes
+      const datosCaptura = {
+        identificacion_reportada: formData.identificacion, // Campo correcto según backend
+        lider_identificacion: formData.lider_identificacion,
+        nombre_reportado: formData.nombre,
+        apellido_reportado: formData.apellido
       };
 
-      await axios.post(
-        "https://backend-node-soft360-production.up.railway.app/votantes",
-        datosEnvio
+      // Solo añadir campos opcionales si tienen valor
+      if (formData.celular) datosCaptura.celular_reportado = formData.celular;
+      if (formData.email) datosCaptura.email_reportado = formData.email;
+      if (formData.departamento) datosCaptura.departamento_reportado = formData.departamento;
+      if (formData.ciudad) datosCaptura.ciudad_reportada = formData.ciudad;
+      if (formData.barrio) datosCaptura.barrio_reportado = formData.barrio;
+      if (direccionCompleta) datosCaptura.direccion_reportada = direccionCompleta;
+
+      // Debug: Ver qué se está enviando
+      console.log("📤 Enviando a POST /capturas:", datosCaptura);
+
+      const response = await axios.post(
+        "https://backend-node-soft360-production.up.railway.app/capturas",
+        datosCaptura
       );
+
+      console.log("📥 Respuesta del backend:", response.data);
+
+      // Verificar si hay incidencias en la respuesta
+      if (response.data.incidencias && response.data.incidencias.length > 0) {
+        const incidencias = response.data.incidencias;
+        const tipos = incidencias.map(i => i.tipo).join(', ');
+
+        alert(`⚠️ Votante registrado pero se detectaron incidencias:\n\n${tipos}\n\nRevisa el historial del votante para más detalles.`);
+      } else {
+        alert("✅ Votante registrado exitosamente");
+      }
+
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error al crear votante:", error);
-      alert(error.response?.data?.error || "Error al crear votante");
+      console.error("❌ Error completo:", error);
+      console.error("📋 Respuesta del servidor:", error.response?.data);
+
+      const errorMsg = error.response?.data?.error ||
+                       error.response?.data?.message ||
+                       error.response?.data?.details ||
+                       error.message ||
+                       "Error al registrar votante";
+
+      alert(`❌ Error del servidor:\n\n${errorMsg}\n\nRevisa la consola para más detalles.`);
     } finally {
       setLoading(false);
     }
@@ -230,13 +205,13 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
     <>
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle
-          sx={{
-            background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+          sx={(theme) => ({
+            background: theme.palette.primary.main,
             color: "#fff",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-          }}
+          })}
         >
           <Typography variant="h6">Nuevo Votante</Typography>
           <IconButton onClick={onClose} sx={{ color: "#fff" }}>
@@ -255,6 +230,8 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
                   onChange={handleChange}
                   fullWidth
                   required
+                  helperText="Mínimo 4 dígitos, no puede iniciar con 0"
+                  error={formData.identificacion && formData.identificacion.length > 0 && formData.identificacion.length < 4}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -284,6 +261,8 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
                   value={formData.celular}
                   onChange={handleChange}
                   fullWidth
+                  helperText="Debe tener exactamente 10 dígitos (opcional)"
+                  error={formData.celular && formData.celular.length > 0 && formData.celular.length !== 10}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -294,12 +273,13 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
                   value={formData.email}
                   onChange={handleChange}
                   fullWidth
+                  helperText="Opcional"
                 />
               </Grid>
 
               {/* Campos de ubicación con API Colombia */}
               <Grid item xs={12}>
-                <Typography variant="h6" sx={{ mb: 1, color: "#018da5" }}>
+                <Typography variant="h6" sx={(theme) => ({ mb: 1, color: theme.palette.primary.main })}>
                   Información de Ubicación
                 </Typography>
               </Grid>
@@ -392,13 +372,15 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
               {/* Campo de líder con buscador */}
               <Grid item xs={12}>
                 <TextField
-                  label="Buscar Líder"
+                  label="Buscar Líder *"
                   value={
                     leaderData
-                      ? `${leaderData.lider_nombre} ${leaderData.lider_apellido} (${leaderData.lider_identificacion})`
+                      ? `${leaderData.nombre} ${leaderData.apellido} (${leaderData.identificacion})`
                       : ""
                   }
                   fullWidth
+                  required
+                  error={!formData.lider_identificacion}
                   InputProps={{
                     readOnly: true,
                     endAdornment: (
@@ -406,21 +388,22 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
                         <IconButton
                           onClick={() => setSearchModalOpen(true)}
                           edge="end"
-                          sx={{ color: "#018da5" }}
+                          sx={(theme) => ({ color: theme.palette.primary.main })}
                         >
                           <SearchIcon />
                         </IconButton>
                       </InputAdornment>
                     ),
                   }}
-                  placeholder="Haz clic en buscar para seleccionar un líder"
+                  placeholder="Haz clic en buscar para seleccionar un líder (REQUERIDO)"
                   sx={{ cursor: "pointer" }}
                   onClick={() => setSearchModalOpen(true)}
+                  helperText="OBLIGATORIO - El líder que reporta este votante debe ser especificado"
                 />
                 {leaderData && (
                   <Box sx={{ mt: 1, display: "flex", gap: 1, alignItems: "center" }}>
                     <Chip
-                      label={`${leaderData.lider_nombre} ${leaderData.lider_apellido}`}
+                      label={`${leaderData.nombre} ${leaderData.apellido}`}
                       color="primary"
                       size="small"
                       onDelete={() => {
@@ -429,7 +412,7 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
                       }}
                     />
                     <Typography variant="caption" color="text.secondary">
-                      ID: {leaderData.lider_identificacion}
+                      ID: {leaderData.identificacion}
                     </Typography>
                   </Box>
                 )}
@@ -445,9 +428,9 @@ const VotanteFormModal = ({ open, onClose, onSuccess }) => {
               type="submit"
               variant="contained"
               disabled={loading}
-              sx={{
-                background: "linear-gradient(135deg, rgb(1, 141, 165) 0%, rgb(11, 155, 138) 100%)",
-              }}
+              sx={(theme) => ({
+                background: theme.palette.primary.main,
+              })}
             >
               {loading ? (
                 <CircularProgress size={24} sx={{ color: "#fff" }} />

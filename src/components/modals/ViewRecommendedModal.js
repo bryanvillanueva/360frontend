@@ -20,6 +20,8 @@ import {
   ListItem,
   ListItemText,
   Avatar,
+  Collapse,
+  ListItemAvatar,
 } from "@mui/material";
 import {
   Close,
@@ -32,6 +34,8 @@ import {
   Phone,
   SupervisorAccount,
   HowToVote,
+  ExpandMore,
+  ExpandLess,
 } from "@mui/icons-material";
 import axios from "axios";
 
@@ -46,12 +50,37 @@ const ViewRecommendedModal = ({ open, onClose, recommendedData }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Estados para cascada expandible
+  const [expandedLeaders, setExpandedLeaders] = useState({});
+  const [leaderVoters, setLeaderVoters] = useState({});
+
   useEffect(() => {
     if (open && recommendedData) {
       fetchRecommendedDetails();
     }
+    if (!open) {
+      setExpandedLeaders({});
+      setLeaderVoters({});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, recommendedData]);
+
+  const toggleLeader = async (leaderId) => {
+    const isExpanding = !expandedLeaders[leaderId];
+    setExpandedLeaders(prev => ({ ...prev, [leaderId]: isExpanding }));
+
+    if (isExpanding && !leaderVoters[leaderId]) {
+      try {
+        const res = await axios.get(
+          `${API}/votantes/por-lider-detalle?lider=${leaderId}`
+        );
+        setLeaderVoters(prev => ({ ...prev, [leaderId]: res.data.votantes || [] }));
+      } catch (err) {
+        console.warn("Error al cargar votantes del líder:", err);
+        setLeaderVoters(prev => ({ ...prev, [leaderId]: [] }));
+      }
+    }
+  };
 
   const fetchRecommendedDetails = async () => {
     if (!recommendedData) return;
@@ -194,13 +223,13 @@ const ViewRecommendedModal = ({ open, onClose, recommendedData }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle
-        sx={{
-          background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+        sx={(theme) => ({
+          background: theme.palette.primary.main,
           color: "#fff",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-        }}
+        })}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Person />
@@ -226,7 +255,7 @@ const ViewRecommendedModal = ({ open, onClose, recommendedData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     Información Personal
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
@@ -276,7 +305,7 @@ const ViewRecommendedModal = ({ open, onClose, recommendedData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     <LocationOn sx={{ mr: 1, verticalAlign: "middle" }} />
                     Dirección
                   </Typography>
@@ -310,7 +339,7 @@ const ViewRecommendedModal = ({ open, onClose, recommendedData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     <Group sx={{ mr: 1, verticalAlign: "middle" }} />
                     Información del Grupo
                   </Typography>
@@ -374,7 +403,7 @@ const ViewRecommendedModal = ({ open, onClose, recommendedData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     <Assessment sx={{ mr: 1, verticalAlign: "middle" }} />
                     Métricas de Liderazgo
                   </Typography>
@@ -436,71 +465,113 @@ const ViewRecommendedModal = ({ open, onClose, recommendedData }) => {
               </Card>
             </Grid>
 
-            {/* Lista de Líderes */}
+            {/* Lista de Líderes con cascada a votantes */}
             {leadersInfo.length > 0 && (
               <Grid item xs={12}>
                 <Card elevation={2}>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                    <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                       <SupervisorAccount sx={{ mr: 1, verticalAlign: "middle" }} />
-                      Líderes Asociados
+                      Líderes Asociados ({leadersInfo.length})
                     </Typography>
                     <Divider sx={{ mb: 2 }} />
 
-                    <List>
-                      {leadersInfo.map((leader, index) => (
-                        <ListItem key={leader.lider_identificacion} divider={index < leadersInfo.length - 1}>
-                          <Avatar sx={{ mr: 2, bgcolor: "#018da5" }}>
-                            <SupervisorAccount />
-                          </Avatar>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <Typography variant="subtitle1" fontWeight={500}>
-                                  {leader.lider_nombre} {leader.lider_apellido}
-                                </Typography>
-                                {leader.complianceRate !== null && (
-                                  <Chip
-                                    label={`${leader.complianceRate.toFixed(0)}%`}
-                                    size="small"
-                                    color={
-                                      leader.complianceRate >= 80 ? "success" :
-                                      leader.complianceRate >= 60 ? "warning" : "error"
-                                    }
-                                  />
-                                )}
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                  ID: {leader.lider_identificacion}
-                                </Typography>
-                                <Box sx={{ display: "flex", gap: 2, mt: 0.5 }}>
-                                  <Typography variant="caption" color="text.secondary">
-                                    <HowToVote sx={{ fontSize: 12, mr: 0.5 }} />
-                                    Votantes: {leader.votersCount}
+                    <List disablePadding>
+                      {leadersInfo.map((leader) => (
+                        <Box key={leader.lider_identificacion}>
+                          <ListItem
+                            button
+                            onClick={() => toggleLeader(leader.lider_identificacion)}
+                            sx={{ cursor: "pointer", "&:hover": { bgcolor: "action.hover" } }}
+                            divider={!expandedLeaders[leader.lider_identificacion]}
+                          >
+                            <ListItemAvatar>
+                              <Avatar sx={(theme) => ({ bgcolor: theme.palette.primary.main })}>
+                                <SupervisorAccount />
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <Typography variant="subtitle1" fontWeight={500}>
+                                    {leader.lider_nombre} {leader.lider_apellido}
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    <TrendingUp sx={{ fontSize: 12, mr: 0.5 }} />
-                                    Expectativa: {leader.lider_objetivo || "No definida"}
-                                  </Typography>
+                                  <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                                    <Chip
+                                      label={`${leader.votersCount} votantes`}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ height: 22, fontSize: "0.75rem" }}
+                                    />
+                                    {leader.complianceRate !== null && (
+                                      <Chip
+                                        label={`${leader.complianceRate.toFixed(0)}%`}
+                                        size="small"
+                                        color={
+                                          leader.complianceRate >= 80 ? "success" :
+                                          leader.complianceRate >= 60 ? "warning" : "error"
+                                        }
+                                      />
+                                    )}
+                                    {expandedLeaders[leader.lider_identificacion] ? <ExpandLess /> : <ExpandMore />}
+                                  </Box>
                                 </Box>
-                                {leader.complianceRate !== null && (
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={Math.min(leader.complianceRate, 100)}
-                                    color={
-                                      leader.complianceRate >= 80 ? "success" :
-                                      leader.complianceRate >= 60 ? "warning" : "error"
-                                    }
-                                    sx={{ mt: 1, height: 4, borderRadius: 2 }}
-                                  />
-                                )}
-                              </Box>
-                            }
-                          />
-                        </ListItem>
+                              }
+                              secondary={
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                                    ID: {leader.lider_identificacion} | Objetivo: {leader.lider_objetivo || "No definido"}
+                                  </Typography>
+                                  {leader.complianceRate !== null && (
+                                    <LinearProgress
+                                      variant="determinate"
+                                      value={Math.min(leader.complianceRate, 100)}
+                                      color={
+                                        leader.complianceRate >= 80 ? "success" :
+                                        leader.complianceRate >= 60 ? "warning" : "error"
+                                      }
+                                      sx={{ mt: 1, height: 4, borderRadius: 2 }}
+                                    />
+                                  )}
+                                </Box>
+                              }
+                            />
+                          </ListItem>
+
+                          {/* Votantes del líder (cascada) */}
+                          <Collapse in={expandedLeaders[leader.lider_identificacion]} timeout="auto" unmountOnExit>
+                            <List disablePadding sx={{ pl: 4, bgcolor: "grey.50" }}>
+                              {!leaderVoters[leader.lider_identificacion] ? (
+                                <ListItem>
+                                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                                  <Typography variant="caption">Cargando votantes...</Typography>
+                                </ListItem>
+                              ) : leaderVoters[leader.lider_identificacion].length === 0 ? (
+                                <ListItem>
+                                  <Typography variant="caption" color="text.secondary">Sin votantes asignados</Typography>
+                                </ListItem>
+                              ) : (
+                                leaderVoters[leader.lider_identificacion].map((voter) => (
+                                  <ListItem key={voter.identificacion} sx={{ py: 0.5, borderLeft: "3px solid", borderLeftColor: "primary.light" }}>
+                                    <ListItemAvatar>
+                                      <Avatar sx={{ bgcolor: "grey.400", width: 28, height: 28 }}>
+                                        <HowToVote sx={{ fontSize: 14 }} />
+                                      </Avatar>
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                      primary={
+                                        <Typography variant="body2" fontSize="0.85rem">
+                                          {voter.nombre} {voter.apellido}
+                                        </Typography>
+                                      }
+                                      secondary={`ID: ${voter.identificacion} | ${voter.ciudad || "-"}, ${voter.barrio || "-"}`}
+                                    />
+                                  </ListItem>
+                                ))
+                              )}
+                            </List>
+                          </Collapse>
+                        </Box>
                       ))}
                     </List>
                   </CardContent>
