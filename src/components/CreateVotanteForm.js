@@ -3,11 +3,12 @@ import {
   Box, Button, Typography, CircularProgress, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, IconButton, TextField,
   InputAdornment, Snackbar, Alert, Skeleton, MenuItem, Select, FormControl, InputLabel,
-  TablePagination, Checkbox, Chip
+  TablePagination, Checkbox, Chip, alpha, Dialog, DialogTitle, DialogContent,
+  DialogActions, Radio, RadioGroup, FormControlLabel, FormLabel
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
-  Edit, Delete, Add, Search as SearchIcon, Refresh, Visibility
+  Edit, Delete, Add, Search as SearchIcon, Refresh, Visibility, CloudUpload
 } from "@mui/icons-material";
 import axios from "axios";
 import VotanteFormModal from "./modals/VotanteFormModal";
@@ -25,7 +26,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   marginTop: theme.spacing(3),
   overflowX: "auto",
   "& .MuiTableHead-root": {
-    background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+    background: theme.palette.primary.main,
     "& .MuiTableCell-head": {
       color: "#fff",
       fontWeight: 600,
@@ -37,7 +38,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   "& .MuiTableBody-root .MuiTableRow-root": {
     transition: "all 0.3s",
     "&:hover": {
-      backgroundColor: "rgba(1, 141, 165, 0.05)",
+      backgroundColor: alpha(theme.palette.primary.main, 0.05),
       transform: "translateX(0px)",
     },
   },
@@ -49,7 +50,7 @@ const RoundedPaper = styled(Paper)(({ theme }) => ({
   '& .MuiTablePagination-root': {
     borderBottomLeftRadius: theme.spacing(2),
     borderBottomRightRadius: theme.spacing(2),
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.palette.background.paper,
     marginTop: 0, // Aseguramos que no haya margen superior
   },
 }));
@@ -63,7 +64,7 @@ const SearchBar = styled(TextField)(({ theme }) => ({
       boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
     },
     "&.Mui-focused": {
-      boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
+      boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
     },
   },
 }));
@@ -99,6 +100,15 @@ const CreateVotanteForm = () => {
     message: "",
     severity: "success"
   });
+
+  // Estados para carga Excel
+  const fileInputRef = React.useRef(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [duplicadosReasignables, setDuplicadosReasignables] = useState([]);
+  const [duplicadosNoReasignables, setDuplicadosNoReasignables] = useState([]);
+  const [modalReasignacionOpen, setModalReasignacionOpen] = useState(false);
+  const [modalNoReasignableOpen, setModalNoReasignableOpen] = useState(false);
+  const [reassignOptions, setReassignOptions] = useState({});
 
   // fetch inicial
   useEffect(() => {
@@ -285,11 +295,32 @@ const CreateVotanteForm = () => {
     }
   };
 
-  // Eliminación individual reutilizando el flujo masivo
+  // Eliminación individual con motivo
   const handleDeleteVotante = (votante) => {
-    setSelectedVotantes([votante]);
-    setSureDelete(false);
-    setBulkDeleteOpen(true);
+    setSelectedVotante(votante);
+    setDeleteModalOpen(true);
+  };
+
+  // Confirmar eliminación individual con motivo
+  const handleConfirmDelete = async (deleteReason) => {
+    setLoading(true);
+    try {
+      await axios.delete(
+        `https://backend-node-soft360-production.up.railway.app/votantes/${selectedVotante.identificacion}`,
+        {
+          data: { delete_reason: deleteReason || "Sin motivo especificado" }
+        }
+      );
+      showSnackbar("Votante eliminado exitosamente");
+      setDeleteModalOpen(false);
+      setSelectedVotante(null);
+      fetchVotantes();
+    } catch (error) {
+      console.error("Error al eliminar votante:", error);
+      showSnackbar(error.response?.data?.error || "Error al eliminar votante", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Eliminación masiva
@@ -319,24 +350,164 @@ const CreateVotanteForm = () => {
     }
   };
 
-  // Confirmar eliminación (deprecated - se usa handleBulkDelete)
-  const handleConfirmDelete = async () => {
+  // Manejar carga de Excel
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = "";
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("file", file);
+    setUploadLoading(true);
+
     try {
-      await axios.delete(
-        `https://backend-node-soft360-production.up.railway.app/votantes/${selectedVotante.identificacion}`
+      const response = await axios.post(
+        "https://backend-node-soft360-production.up.railway.app/votantes/upload_csv",
+        formDataToSend,
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
-      showSnackbar("Votante eliminado exitosamente");
-      setDeleteModalOpen(false);
-      setSelectedVotante(null);
+
+      const { procesados = 0, capturas_insertadas = 0, incidencias = [] } = response.data;
+
+      if (incidencias && incidencias.length > 0) {
+        const duplicadosMismoLider = incidencias.filter(i =>
+          i.tipo === 'DUPLICIDAD_CON_SI_MISMO' || i.tipo === 'DUPLICIDAD_LIDER'
+        );
+        const duplicadosOtroLider = incidencias.filter(i =>
+          i.tipo === 'DUPLICIDAD_ENTRE_LIDERES'
+        );
+        const conflictos = incidencias.filter(i =>
+          i.tipo === 'CONFLICTO_DATOS'
+        );
+
+        const reasignables = duplicadosOtroLider.map(inc => ({
+          identificacion: inc.votante_identificacion,
+          nombre: inc.detalles?.votante_nombre || '',
+          apellido: inc.detalles?.votante_apellido || '',
+          direccion: inc.detalles?.direccion || '',
+          celular: inc.detalles?.celular || '',
+          lider_identificacion: inc.detalles?.lider_actual || '',
+          lider_nombre: inc.detalles?.lider_actual_nombre || '',
+          identificacion_intentado: inc.votante_identificacion,
+          nombre_intentado: inc.detalles?.nombre_capturado || '',
+          apellido_intentado: inc.detalles?.apellido_capturado || '',
+          direccion_intentado: inc.detalles?.direccion_capturada || '',
+          celular_intentado: inc.detalles?.celular_capturado || '',
+          lider_intentado: inc.lider_identificacion || '',
+        }));
+
+        const noReasignables = [...duplicadosMismoLider, ...conflictos].map(inc => ({
+          identificacion: inc.votante_identificacion,
+          nombre: inc.detalles?.votante_nombre || '',
+          apellido: inc.detalles?.votante_apellido || '',
+          direccion: inc.detalles?.direccion || '',
+          celular: inc.detalles?.celular || '',
+          lider_identificacion: inc.detalles?.lider_actual || inc.lider_identificacion || '',
+          lider_nombre: inc.detalles?.lider_actual_nombre || '',
+          identificacion_intentado: inc.votante_identificacion,
+          nombre_intentado: inc.detalles?.nombre_capturado || '',
+          apellido_intentado: inc.detalles?.apellido_capturado || '',
+          direccion_intentado: inc.detalles?.direccion_capturada || '',
+          celular_intentado: inc.detalles?.celular_capturado || '',
+          lider_intentado: inc.lider_identificacion || '',
+        }));
+
+        setDuplicadosReasignables(reasignables);
+        setDuplicadosNoReasignables(noReasignables);
+
+        const initialOptions = {};
+        reasignables.forEach((dup) => {
+          initialOptions[dup.identificacion] = "current";
+        });
+        setReassignOptions(initialOptions);
+
+        if (reasignables.length > 0) {
+          setModalReasignacionOpen(true);
+        } else if (noReasignables.length > 0) {
+          setModalNoReasignableOpen(true);
+        }
+
+        showSnackbar(`${procesados} procesados, ${capturas_insertadas} capturas, ${incidencias.length} incidencias`, "warning");
+      } else {
+        showSnackbar(`Carga exitosa: ${procesados} procesados, ${capturas_insertadas} capturas creadas`);
+      }
       fetchVotantes();
     } catch (error) {
-      console.error("Error al eliminar votante:", error);
-      showSnackbar("Error al eliminar votante", "error");
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || "Error al cargar el archivo";
+      showSnackbar(errorMsg, "error");
+    } finally {
+      setUploadLoading(false);
     }
   };
 
+  const handleReassignOptionChange = (cedula, value) => {
+    setReassignOptions((prev) => ({ ...prev, [cedula]: value }));
+  };
+
+  const handleConfirmReassign = async () => {
+    let errorOccurred = false;
+    let reasignados = 0;
+    let mantenidos = 0;
+
+    for (const dup of duplicadosReasignables) {
+      if (reassignOptions[dup.identificacion] === "new") {
+        try {
+          await axios.post("https://backend-node-soft360-production.up.railway.app/asignaciones", {
+            votante_identificacion: dup.identificacion,
+            lider_identificacion: dup.lider_intentado
+          });
+
+          const hayDiferencias =
+            (dup.nombre_intentado && dup.nombre_intentado !== dup.nombre) ||
+            (dup.apellido_intentado && dup.apellido_intentado !== dup.apellido) ||
+            (dup.celular_intentado && dup.celular_intentado !== dup.celular) ||
+            (dup.direccion_intentado && dup.direccion_intentado !== dup.direccion);
+
+          if (hayDiferencias) {
+            await axios.put(`https://backend-node-soft360-production.up.railway.app/votantes/${dup.identificacion}`, {
+              nombre: dup.nombre_intentado || dup.nombre,
+              apellido: dup.apellido_intentado || dup.apellido,
+              celular: dup.celular_intentado || dup.celular,
+              direccion: dup.direccion_intentado || dup.direccion
+            });
+          }
+          reasignados++;
+        } catch (error) {
+          console.error("Error al reasignar votante:", error);
+          errorOccurred = true;
+        }
+      } else {
+        mantenidos++;
+      }
+    }
+
+    if (!errorOccurred) {
+      showSnackbar(`${reasignados} reasignado(s), ${mantenidos} mantenido(s) sin cambios`);
+    } else {
+      showSnackbar("Error al procesar algunos duplicados", "error");
+    }
+    setModalReasignacionOpen(false);
+    fetchVotantes();
+  };
+
+  const handleDownloadDuplicados = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Identificacion,Nombre,Apellido,Direccion,Celular,LiderActual\n";
+    duplicadosNoReasignables.forEach((dup) => {
+      const row = [dup.identificacion, dup.nombre, dup.apellido, dup.direccion, dup.celular, dup.lider_identificacion].join(",");
+      csvContent += row + "\n";
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "duplicados_votantes.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
+    <Box sx={(theme) => ({ minHeight: "100vh", bgcolor: theme.palette.background.subtle, pb: 4 })}>
       <PageHeader
         title="Gestión de Votantes"
         description="Administra y organiza los votantes del sistema electoral"
@@ -391,13 +562,35 @@ const CreateVotanteForm = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={() => setFormModalOpen(true)}
-            sx={{
-              background: "linear-gradient(135deg, rgb(1, 141, 165) 0%, rgb(11, 155, 138) 100%)",
+            sx={(theme) => ({
+              background: theme.palette.primary.main,
               borderRadius: 3,
               fontWeight: 600,
-            }}
+            })}
           >
             Nuevo Votante
+          </Button>
+
+          <input
+            type="file"
+            accept=".xls,.xlsx"
+            ref={fileInputRef}
+            onChange={handleExcelUpload}
+            style={{ display: "none" }}
+          />
+          <Button
+            variant="outlined"
+            startIcon={uploadLoading ? <CircularProgress size={18} /> : <CloudUpload />}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadLoading}
+            sx={(theme) => ({
+              borderColor: theme.palette.primary.main,
+              color: theme.palette.primary.main,
+              borderRadius: 3,
+              fontWeight: 600,
+            })}
+          >
+            Cargar Excel
           </Button>
 
           {selectedVotantes.length > 0 && (
@@ -484,12 +677,34 @@ const CreateVotanteForm = () => {
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.ciudad || "-"}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{v.barrio || "-"}</TableCell>
                       <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.direccion || "-"}</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{[v.lider_nombre, v.lider_apellido, "( CC: ",v.lider_identificacion,")"].filter(Boolean).join(' ') || "-"}</TableCell>
-                      <TableCell align="center" sx={{ borderLeft: '0.5px solid #f3f3f3', whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        {v.lideres_asignados && v.lideres_asignados.length > 0 ? (
+                          <Box>
+                            <Typography variant="body2">
+                              {v.first_lider_nombre && v.first_lider_apellido
+                                ? `${v.first_lider_nombre} ${v.first_lider_apellido}`
+                                : v.first_lider_identificacion || "-"}
+                            </Typography>
+                            {v.lideres_asignados.length > 1 && (
+                              <Chip
+                                label={`+${v.lideres_asignados.length - 1} más`}
+                                size="small"
+                                color="info"
+                                sx={{ height: 18, fontSize: '0.7rem', mt: 0.5 }}
+                              />
+                            )}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            Sin líder
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="center" sx={(theme) => ({ borderLeft: `0.5px solid ${theme.palette.grey[300]}`, whiteSpace: 'nowrap' })}>
                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                           <IconButton
                             size="small"
-                            sx={{ color: "#018da5" }}
+                            sx={(theme) => ({ color: theme.palette.primary.main })}
                             onClick={() => handleViewVotante(v)}
                             title="Ver detalles"
                           >
@@ -497,7 +712,7 @@ const CreateVotanteForm = () => {
                           </IconButton>
                           <IconButton
                             size="small"
-                            sx={{ color: "#018da5" }}
+                            sx={(theme) => ({ color: theme.palette.primary.main })}
                             onClick={() => handleEditVotante(v)}
                             title="Editar votante"
                           >
@@ -505,7 +720,7 @@ const CreateVotanteForm = () => {
                           </IconButton>
                           <IconButton
                             size="small"
-                            sx={{ color: "#d32f2f" }}
+                            sx={(theme) => ({ color: theme.palette.error.main })}
                             onClick={() => handleDeleteVotante(v)}
                             title="Eliminar votante"
                           >
@@ -519,7 +734,7 @@ const CreateVotanteForm = () => {
               </TableBody>
             </Table>
           </StyledTableContainer>
-          
+
           {/* Paginación con bordes redondeados y sin espacio superior */}
           <TablePagination
             rowsPerPageOptions={[10, 25, 50, 100]}
@@ -533,13 +748,13 @@ const CreateVotanteForm = () => {
             labelDisplayedRows={({ from, to, count }) =>
               `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
             }
-            sx={{
+            sx={(theme) => ({
               borderTop: '1px solid rgba(224, 224, 224, 0.5)',
               '& .MuiTablePagination-toolbar': {
                 padding: '4px 16px 8px', // Padding reducido: 4px arriba, 16px lados, 8px abajo
                 minHeight: '44px',       // Altura mínima reducida
                 borderRadius: '0 0 16px 16px',
-                backgroundColor: '#ffffff',
+                backgroundColor: theme.palette.background.paper,
                 display: 'flex',
                 justifyContent: 'flex-end', // Alinea todo el contenido a la derecha
                 alignItems: 'center',
@@ -557,7 +772,7 @@ const CreateVotanteForm = () => {
               '& .MuiTablePagination-actions': {
                 marginLeft: '8px'
               }
-            }}
+            })}
           />
         </RoundedPaper>
       </Box>
@@ -608,8 +823,8 @@ const CreateVotanteForm = () => {
             setSelectedVotante(null);
           }}
           votante={selectedVotante}
-          onConfirm={handleConfirmDelete}
-          loading={false}
+          onDelete={handleConfirmDelete}
+          loading={loading}
         />
       )}
 
@@ -649,6 +864,106 @@ const CreateVotanteForm = () => {
         setSure={setSureDelete}
         max={50}
       />
+
+      {/* Modal para duplicados reasignables */}
+      <Dialog
+        open={modalReasignacionOpen}
+        onClose={() => setModalReasignacionOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Duplicados con Líder Diferente</DialogTitle>
+        <DialogContent>
+          <Box sx={{ maxHeight: "400px", overflowY: "auto", pr: 1 }}>
+            {duplicadosReasignables.map((dup) => (
+              <Box key={dup.identificacion} sx={{ mb: 2, p: 1, border: "1px solid #ccc", borderRadius: 1 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>Comparativo de Información</Typography>
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <Box sx={{ flex: 1, p: 1, border: "1px solid #ccc", borderRadius: 1 }}>
+                    <Typography variant="subtitle2">Información Existente</Typography>
+                    <Typography><strong>ID:</strong> {dup.identificacion}</Typography>
+                    <Typography><strong>Nombre:</strong> {dup.nombre} {dup.apellido}</Typography>
+                    <Typography><strong>Dirección:</strong> {dup.direccion}</Typography>
+                    <Typography><strong>Celular:</strong> {dup.celular}</Typography>
+                    <Typography><strong>Líder Actual:</strong> {dup.lider_identificacion} {dup.lider_nombre ? `- ${dup.lider_nombre}` : ""}</Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, p: 1, border: "1px solid #ccc", borderRadius: 1 }}>
+                    <Typography variant="subtitle2">Información Ingresada</Typography>
+                    <Typography><strong>ID:</strong> {dup.identificacion_intentado || dup.identificacion}</Typography>
+                    <Typography><strong>Nombre:</strong> {dup.nombre_intentado || dup.nombre} {dup.apellido_intentado || dup.apellido}</Typography>
+                    <Typography><strong>Dirección:</strong> {dup.direccion_intentado || dup.direccion}</Typography>
+                    <Typography><strong>Celular:</strong> {dup.celular_intentado || dup.celular}</Typography>
+                    <Typography><strong>Líder Ingresado:</strong> {dup.lider_intentado || dup.lider_identificacion}</Typography>
+                  </Box>
+                </Box>
+                {dup.lider_intentado && dup.lider_intentado !== dup.lider_identificacion && (
+                  <Box sx={{ mt: 1 }}>
+                    <FormControl component="fieldset">
+                      <FormLabel component="legend">¿A qué líder deseas asignar este votante?</FormLabel>
+                      <RadioGroup
+                        value={reassignOptions[dup.identificacion] || "current"}
+                        onChange={(e) => handleReassignOptionChange(dup.identificacion, e.target.value)}
+                      >
+                        <FormControlLabel value="current" control={<Radio />} label={`Mantener líder actual (${dup.lider_identificacion} ${dup.lider_nombre ? "- " + dup.lider_nombre : ""})`} />
+                        <FormControlLabel value="new" control={<Radio />} label={`Asignar al nuevo líder (${dup.lider_intentado})`} />
+                      </RadioGroup>
+                    </FormControl>
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModalReasignacionOpen(false)} variant="outlined">Cancelar</Button>
+          {duplicadosReasignables.some(
+            (dup) => dup.lider_intentado && dup.lider_intentado !== dup.lider_identificacion && reassignOptions[dup.identificacion] === "new"
+          ) && (
+            <Button onClick={handleConfirmReassign} variant="contained" color="primary">Confirmar Reasignación</Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal para duplicados no reasignables */}
+      <Dialog
+        open={modalNoReasignableOpen}
+        onClose={() => setModalNoReasignableOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Duplicados Detectados (Mismo Líder)</DialogTitle>
+        <DialogContent>
+          <Box sx={{ maxHeight: "400px", overflowY: "auto", pr: 1 }}>
+            {duplicadosNoReasignables.map((dup) => (
+              <Box key={dup.identificacion} sx={{ mb: 2, p: 1, border: "1px solid #ccc", borderRadius: 1 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>Comparativo de Información</Typography>
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <Box sx={{ flex: 1, p: 1, border: "1px solid #ccc", borderRadius: 1 }}>
+                    <Typography variant="subtitle2">Información Existente</Typography>
+                    <Typography><strong>ID:</strong> {dup.identificacion}</Typography>
+                    <Typography><strong>Nombre:</strong> {dup.nombre} {dup.apellido}</Typography>
+                    <Typography><strong>Dirección:</strong> {dup.direccion}</Typography>
+                    <Typography><strong>Celular:</strong> {dup.celular}</Typography>
+                    <Typography><strong>Líder Actual:</strong> {dup.lider_identificacion} {dup.lider_nombre ? `- ${dup.lider_nombre}` : ""}</Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, p: 1, border: "1px solid #ccc", borderRadius: 1 }}>
+                    <Typography variant="subtitle2">Información Ingresada</Typography>
+                    <Typography><strong>ID:</strong> {dup.identificacion_intentado || dup.identificacion}</Typography>
+                    <Typography><strong>Nombre:</strong> {dup.nombre_intentado || dup.nombre} {dup.apellido_intentado || dup.apellido}</Typography>
+                    <Typography><strong>Dirección:</strong> {dup.direccion_intentado || dup.direccion}</Typography>
+                    <Typography><strong>Celular:</strong> {dup.celular_intentado || dup.celular}</Typography>
+                    <Typography><strong>Líder Ingresado:</strong> {dup.lider_intentado || dup.lider_identificacion}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModalNoReasignableOpen(false)} variant="outlined">Cerrar</Button>
+          <Button onClick={handleDownloadDuplicados} variant="contained" color="primary">Descargar CSV</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar para notificaciones */}
       <Snackbar

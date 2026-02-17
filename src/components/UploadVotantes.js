@@ -52,43 +52,107 @@ const UploadVotantes = () => {
         formDataToSend,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
-      // Se espera que el backend retorne un objeto con: message, insertados y duplicados (arreglo)
-      if (response.data.duplicados && response.data.duplicados.length > 0) {
-        const dups = response.data.duplicados;
+
+      // NUEVO FORMATO DE RESPUESTA con arquitectura de staging (capturas_votante)
+      // Response esperado: { message, procesados, capturas_insertadas, incidencias }
+      const { procesados = 0, capturas_insertadas = 0, incidencias = [] } = response.data;
+
+      // Mostrar resumen de procesamiento
+      if (incidencias && incidencias.length > 0) {
+        // Clasificar incidencias por tipo
+        const duplicadosMismoLider = incidencias.filter(i =>
+          i.tipo === 'DUPLICIDAD_CON_SI_MISMO' || i.tipo === 'DUPLICIDAD_LIDER'
+        );
+        const duplicadosOtroLider = incidencias.filter(i =>
+          i.tipo === 'DUPLICIDAD_ENTRE_LIDERES'
+        );
+        const conflictos = incidencias.filter(i =>
+          i.tipo === 'CONFLICTO_DATOS'
+        );
+
+        // Construir array de duplicados para compatibilidad con UI existente
+        const dups = incidencias.map(inc => ({
+          identificacion: inc.votante_identificacion,
+          nombre: inc.votante_nombre || '',
+          apellido: inc.votante_apellido || '',
+          direccion: inc.detalles?.direccion || '',
+          celular: inc.detalles?.celular || '',
+          lider_identificacion: inc.detalles?.lider_actual || '',
+          lider_nombre: inc.detalles?.lider_actual_nombre || '',
+          // Datos intentados (si existen en detalles)
+          identificacion_intentado: inc.votante_identificacion,
+          nombre_intentado: inc.detalles?.nombre_capturado || '',
+          apellido_intentado: inc.detalles?.apellido_capturado || '',
+          direccion_intentado: inc.detalles?.direccion_capturada || '',
+          celular_intentado: inc.detalles?.celular_capturado || '',
+          lider_intentado: inc.lider_identificacion || '',
+          tipo_incidencia: inc.tipo
+        }));
+
         setDuplicados(dups);
-        // Separamos los duplicados:
-        // Reasignables: donde el campo lider_intentado está definido y es distinto al actual
-        const reasignables = dups.filter(
-          (dup) =>
-            dup.lider_intentado &&
-            dup.lider_intentado !== dup.lider_identificacion
-        );
-        // No reasignables: donde el líder ingresado es igual al existente o no se envió lider_intentado
-        const noReasignables = dups.filter(
-          (dup) =>
-            !dup.lider_intentado || dup.lider_intentado === dup.lider_identificacion
-        );
+
+        // Separar duplicados reasignables y no reasignables
+        const reasignables = duplicadosOtroLider.map(inc => ({
+          identificacion: inc.votante_identificacion,
+          nombre: inc.detalles?.votante_nombre || '',
+          apellido: inc.detalles?.votante_apellido || '',
+          direccion: inc.detalles?.direccion || '',
+          celular: inc.detalles?.celular || '',
+          lider_identificacion: inc.detalles?.lider_actual || '',
+          lider_nombre: inc.detalles?.lider_actual_nombre || '',
+          identificacion_intentado: inc.votante_identificacion,
+          nombre_intentado: inc.detalles?.nombre_capturado || '',
+          apellido_intentado: inc.detalles?.apellido_capturado || '',
+          direccion_intentado: inc.detalles?.direccion_capturada || '',
+          celular_intentado: inc.detalles?.celular_capturado || '',
+          lider_intentado: inc.lider_identificacion || '',
+          tipo_incidencia: inc.tipo
+        }));
+
+        const noReasignables = [...duplicadosMismoLider, ...conflictos].map(inc => ({
+          identificacion: inc.votante_identificacion,
+          nombre: inc.detalles?.votante_nombre || '',
+          apellido: inc.detalles?.votante_apellido || '',
+          direccion: inc.detalles?.direccion || '',
+          celular: inc.detalles?.celular || '',
+          lider_identificacion: inc.detalles?.lider_actual || inc.lider_identificacion || '',
+          lider_nombre: inc.detalles?.lider_actual_nombre || '',
+          identificacion_intentado: inc.votante_identificacion,
+          nombre_intentado: inc.detalles?.nombre_capturado || '',
+          apellido_intentado: inc.detalles?.apellido_capturado || '',
+          direccion_intentado: inc.detalles?.direccion_capturada || '',
+          celular_intentado: inc.detalles?.celular_capturado || '',
+          lider_intentado: inc.lider_identificacion || '',
+          tipo_incidencia: inc.tipo
+        }));
+
         setDuplicadosReasignables(reasignables);
         setDuplicadosNoReasignables(noReasignables);
-        // Inicializamos la opción de reasignación para cada duplicado reasignable en "current"
+
+        // Inicializar opciones de reasignación
         const initialOptions = {};
         reasignables.forEach((dup) => {
           initialOptions[dup.identificacion] = "current";
         });
         setReassignOptions(initialOptions);
-        // Abrir el modal de reasignación si hay duplicados reasignables; si no, se abre el modal de no reasignables
+
+        // Abrir modal correspondiente
         if (reasignables.length > 0) {
           setModalReasignacionOpen(true);
-        } else {
+        } else if (noReasignables.length > 0) {
           setModalNoReasignableOpen(true);
+        } else {
+          alert(`Procesamiento exitoso:\n- ${procesados} registros procesados\n- ${capturas_insertadas} capturas creadas\n- ${incidencias.length} incidencias detectadas`);
         }
       } else {
-        alert(response.data.message);
+        // No hay incidencias - todo procesado correctamente
+        alert(`✅ Carga completada exitosamente:\n- ${procesados} registros procesados\n- ${capturas_insertadas} capturas creadas\n- Sin incidencias detectadas`);
       }
       setUploadResult(response.data);
     } catch (error) {
       console.error("Error al cargar el archivo:", error);
-      alert("Error al cargar el archivo");
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || "Error al cargar el archivo";
+      alert(`❌ Error: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -100,46 +164,53 @@ const UploadVotantes = () => {
 
   const handleConfirmReassign = async () => {
     let errorOccurred = false;
+    let reasignados = 0;
+    let mantenidos = 0;
+
     for (const dup of duplicadosReasignables) {
       if (reassignOptions[dup.identificacion] === "new") {
-        // Se reasigna: se actualiza el registro del votante con la información ingresada (intentada)
+        // OPCIÓN 1: Reasignar al nuevo líder
+        // Con arquitectura de staging: crear nueva asignación + actualizar datos canónicos
         try {
-          await axios.put("https://backend-node-soft360-production.up.railway.app/votantes/reasignar", {
+          // Crear nueva asignación N:M con el nuevo líder
+          await axios.post("https://backend-node-soft360-production.up.railway.app/asignaciones", {
             votante_identificacion: dup.identificacion,
-            old_lider_identificacion: dup.lider_identificacion,
-            new_lider_identificacion: dup.lider_intentado,
-            // Se actualizan los campos con la información ingresada en el Excel
-            nombre_intentado: dup.nombre_intentado || dup.nombre,
-            apellido_intentado: dup.apellido_intentado || dup.apellido,
-            direccion_intentado: dup.direccion_intentado || dup.direccion,
-            celular_intentado: dup.celular_intentado || dup.celular,
-            lider_intentado: dup.lider_intentado,
+            lider_identificacion: dup.lider_intentado
           });
+
+          // Actualizar datos canónicos del votante si hay diferencias
+          const hayDiferencias =
+            (dup.nombre_intentado && dup.nombre_intentado !== dup.nombre) ||
+            (dup.apellido_intentado && dup.apellido_intentado !== dup.apellido) ||
+            (dup.celular_intentado && dup.celular_intentado !== dup.celular) ||
+            (dup.direccion_intentado && dup.direccion_intentado !== dup.direccion);
+
+          if (hayDiferencias) {
+            await axios.put(`https://backend-node-soft360-production.up.railway.app/votantes/${dup.identificacion}`, {
+              nombre: dup.nombre_intentado || dup.nombre,
+              apellido: dup.apellido_intentado || dup.apellido,
+              celular: dup.celular_intentado || dup.celular,
+              direccion: dup.direccion_intentado || dup.direccion
+            });
+          }
+
+          reasignados++;
         } catch (error) {
           console.error("Error al reasignar votante:", error);
           errorOccurred = true;
         }
       } else {
-        // Opción "current": se mantiene el líder actual sin actualizar la información,
-        // pero se crea un log en el perfil del líder (del duplicado ingresado) informando que se mantuvo
-        try {
-          await axios.put("https://backend-node-soft360-production.up.railway.app/votantes/reasignar", {
-            votante_identificacion: dup.identificacion,
-            old_lider_identificacion: dup.lider_identificacion,
-            new_lider_identificacion: dup.lider_identificacion,
-            // Se envía el campo lider_intentado para que el backend pueda generar el log en el perfil del otro líder, si corresponde.
-            lider_intentado: dup.lider_intentado,
-          });
-        } catch (error) {
-          console.error("Error al loggear duplicado sin cambio:", error);
-          errorOccurred = true;
-        }
+        // OPCIÓN 2: Mantener líder actual
+        // No se hace nada - la captura ya está registrada con la incidencia
+        // El backend ya creó el registro en capturas_votante y la incidencia
+        mantenidos++;
       }
     }
+
     if (!errorOccurred) {
-      alert("Reasignación completada para los duplicados seleccionados.");
+      alert(`✅ Proceso completado:\n- ${reasignados} votante(s) reasignado(s)\n- ${mantenidos} votante(s) mantenido(s) sin cambios\n\nLas incidencias quedan registradas en el historial.`);
     } else {
-      alert("Ocurrió un error al reasignar algunos duplicados.");
+      alert("⚠️ Ocurrió un error al procesar algunos duplicados. Revisa la consola para más detalles.");
     }
     setModalReasignacionOpen(false);
   };
@@ -173,7 +244,7 @@ const UploadVotantes = () => {
       <Box
         sx={{
           width: "100%",
-          backgroundColor: "#10a1e3",
+          backgroundColor: "primary.main",
           color: "white",
           p: 2,
           mb: 3,
@@ -190,7 +261,7 @@ const UploadVotantes = () => {
           sx={{
             mb: 4,
             p: 2,
-            backgroundColor: "#f5f5f5",
+            backgroundColor: "background.subtle",
             borderRadius: 1,
           }}
         >
@@ -216,7 +287,8 @@ const UploadVotantes = () => {
               sx={{
                 padding: 2,
                 textAlign: "center",
-                border: "2px dashed #1976d2",
+                border: "2px dashed",
+                borderColor: "primary.main",
                 borderRadius: 1,
                 mb: 3,
                 display: "flex",

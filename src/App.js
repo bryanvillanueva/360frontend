@@ -4,20 +4,14 @@ import UploadPDF from "./components/UploadPDF";
 import CreateRecommendedForm from "./components/CreateRecommendedForm";
 import CreateLeaderForm from "./components/CreateLeaderForm";
 import CreateVotanteForm from "./components/CreateVotanteForm";
-import UploadVotantes from "./components/UploadVotantes";
 import VotantesFiltro from "./components/VotantesFiltro";
 import DrawerMenu from "./components/DrawerMenu";
 import Dashboard from "./components/Dashboard";
 import Grupos from "./components/Grupos";
-import { CssBaseline, ThemeProvider, createTheme, Box } from "@mui/material";
+import { CssBaseline, ThemeProvider, Box } from "@mui/material";
+import theme from "./theme";
 import "@fontsource/montserrat"; // Estilo regular
 import "@fontsource/montserrat/700.css"; // Estilo bold
-
-const theme = createTheme({
-  typography: {
-    fontFamily: "Montserrat, Arial, sans-serif",
-  },
-});
 
 function App() {
   return (
@@ -36,12 +30,6 @@ function App() {
             <Route path="/crear/recomendados" element={<CreateRecommendedForm />} />
             <Route path="/crear/lideres" element={<CreateLeaderForm />} />
             <Route path="/crear/votantes" element={<CreateVotanteForm />} />
-
-            {/* Grupo "Cargas" */}
-            {/* Nota: Los módulos de "Cargar recomendados" y "Cargar líderes" se desarrollarán posteriormente */}
-            <Route path="/cargas/recomendados" element={<div>Cargar Recomendados (Pendiente)</div>} />
-            <Route path="/cargas/lideres" element={<div>Cargar Líderes (Pendiente)</div>} />
-            <Route path="/cargas/votantes" element={<UploadVotantes />} />
 
             {/* Grupo "Filtros y Reportes" */}
             <Route path="/filtros/votantes" element={<VotantesFiltro />} />

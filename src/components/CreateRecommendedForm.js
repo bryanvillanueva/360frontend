@@ -22,6 +22,7 @@ import {
   Grow,
   InputAdornment,
   TablePagination,
+  alpha,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -32,6 +33,7 @@ import {
   PersonAdd,
   Refresh,
   Visibility,
+  CloudUpload,
 } from "@mui/icons-material";
 import axios from "axios";
 
@@ -47,7 +49,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   marginTop: theme.spacing(3),
   overflowX: "auto",
   "& .MuiTableHead-root": {
-    background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+    background: theme.palette.primary.main,
     "& .MuiTableCell-head": {
       color: "#fff",
       fontWeight: 600,
@@ -59,7 +61,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   "& .MuiTableBody-root .MuiTableRow-root": {
     transition: "all 0.3s",
     "&:hover": {
-      backgroundColor: "rgba(1, 141, 165, 0.05)",
+      backgroundColor: alpha(theme.palette.primary.main, 0.05),
     },
   },
 }));
@@ -73,7 +75,7 @@ const SearchBar = styled(TextField)(({ theme }) => ({
       boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
     },
     "&.Mui-focused": {
-      boxShadow: "0 4px 20px rgba(1, 141, 165, 0.2)",
+      boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
     },
   },
 }));
@@ -345,7 +347,7 @@ const RecommendedManagement = () => {
     );
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", pb: 4 }}>
+    <Box sx={(theme) => ({ minHeight: "100vh", bgcolor: theme.palette.background.subtle, pb: 4 })}>
       <PageHeader
         title="Gestión de Recomendados"
         description="Administra y organiza los recomendados del sistema electoral"
@@ -386,11 +388,23 @@ const RecommendedManagement = () => {
               variant="contained"
               startIcon={<PersonAdd />}
               onClick={handleOpenCreateModal}
-              sx={{
-                background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
-              }}
+              sx={(theme) => ({
+                background: theme.palette.primary.main,
+              })}
             >
               Nuevo Recomendado
+            </ActionButton>
+
+            <ActionButton
+              variant="outlined"
+              startIcon={<CloudUpload />}
+              onClick={() => showNotification("La carga masiva de recomendados estará disponible próximamente", "info")}
+              sx={(theme) => ({
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
+              })}
+            >
+              Cargar Excel
             </ActionButton>
 
             <IconButton onClick={fetchRecomendados} color="primary">
@@ -487,26 +501,26 @@ const RecommendedManagement = () => {
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.barrio || "-"}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{recomendado.celular}</TableCell>
                       <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{recomendado.email}</TableCell>
-                      <TableCell align="center" sx={{ borderLeft: '0.5px solid #f3f3f3', whiteSpace: 'nowrap' }}>
+                      <TableCell align="center" sx={(theme) => ({ borderLeft: `0.5px solid ${theme.palette.grey[300]}`, whiteSpace: 'nowrap' })}>
                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                           <IconButton
                             size="small"
                             onClick={() => handleOpenViewModal(recomendado)}
-                            sx={{ color: "#018da5" }}
+                            sx={(theme) => ({ color: theme.palette.primary.main })}
                           >
                             <Visibility />
                           </IconButton>
                           <IconButton
                             size="small"
                             onClick={() => handleOpenEditModal(recomendado)}
-                            sx={{ color: "#018da5" }}
+                            sx={(theme) => ({ color: theme.palette.primary.main })}
                           >
                             <Edit />
                           </IconButton>
                           <IconButton
                             size="small"
                             onClick={() => handleDeleteRecomendado(recomendado)}
-                          sx={{ color: "#d32f2f" }}
+                          sx={(theme) => ({ color: theme.palette.error.main })}
                         >
                           <Delete />
                         </IconButton>

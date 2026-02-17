@@ -245,13 +245,13 @@ const VotantesFiltro = () => {
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: "#1976d2" }}>
-                      <TableCell sx={{ color: "#ffffff" }}>Identificación</TableCell>
-                      <TableCell sx={{ color: "#ffffff" }}>Nombre</TableCell>
-                      <TableCell sx={{ color: "#ffffff" }}>Apellido</TableCell>
-                      <TableCell sx={{ color: "#ffffff" }}>Email</TableCell>
-                      <TableCell sx={{ color: "#ffffff" }}>Total Votantes</TableCell>
-                      <TableCell align="center" sx={{ color: "#ffffff" }}>Acciones</TableCell>
+                    <TableRow sx={(theme) => ({ backgroundColor: theme.palette.primary.main })}>
+                      <TableCell sx={{ color: "#fff" }}>Identificación</TableCell>
+                      <TableCell sx={{ color: "#fff" }}>Nombre</TableCell>
+                      <TableCell sx={{ color: "#fff" }}>Apellido</TableCell>
+                      <TableCell sx={{ color: "#fff" }}>Email</TableCell>
+                      <TableCell sx={{ color: "#fff" }}>Total Votantes</TableCell>
+                      <TableCell align="center" sx={{ color: "#fff" }}>Acciones</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -282,7 +282,7 @@ const VotantesFiltro = () => {
                                   <Box>
                                     <Table size="small">
                                       <TableHead>
-                                        <TableRow sx={{ backgroundColor: "#90caf9" }}>
+                                        <TableRow sx={(theme) => ({ backgroundColor: theme.palette.primary.light })}>
                                           <TableCell>Cédula</TableCell>
                                           <TableCell>Nombre</TableCell>
                                           <TableCell>Apellido</TableCell>

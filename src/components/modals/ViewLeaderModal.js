@@ -16,6 +16,12 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Collapse,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
 } from "@mui/material";
 import {
   Close,
@@ -26,12 +32,17 @@ import {
   LocationOn,
   Email,
   Phone,
+  HowToVote,
+  ExpandMore,
+  ExpandLess,
 } from "@mui/icons-material";
 import axios from "axios";
 
 const ViewLeaderModal = ({ open, onClose, leaderData }) => {
   const [leaderDetails, setLeaderDetails] = useState(null);
   const [votersCount, setVotersCount] = useState(0);
+  const [votersList, setVotersList] = useState([]);
+  const [votersExpanded, setVotersExpanded] = useState(false);
   const [recommendedBy, setRecommendedBy] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -39,6 +50,9 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
   useEffect(() => {
     if (open && leaderData) {
       fetchLeaderDetails();
+    }
+    if (!open) {
+      setVotersExpanded(false);
     }
   }, [open, leaderData]);
 
@@ -52,11 +66,13 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
       // Obtener información del líder
       setLeaderDetails(leaderData);
 
-      // Obtener cantidad de votantes
+      // Obtener votantes
       const votersResponse = await axios.get(
         `https://backend-node-soft360-production.up.railway.app/votantes/por-lider-detalle?lider=${leaderData.lider_identificacion}`
       );
-      setVotersCount(votersResponse.data.votantes?.length || 0);
+      const voters = votersResponse.data.votantes || [];
+      setVotersCount(voters.length);
+      setVotersList(voters);
 
       // Obtener información del recomendado si existe
       if (leaderData.recomendado_identificacion) {
@@ -107,13 +123,13 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle
-        sx={{
-          background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+        sx={(theme) => ({
+          background: theme.palette.primary.main,
           color: "#fff",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-        }}
+        })}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Person />
@@ -139,7 +155,7 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     Información Personal
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
@@ -189,7 +205,7 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     <LocationOn sx={{ mr: 1, verticalAlign: "middle" }} />
                     Dirección
                   </Typography>
@@ -223,7 +239,7 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     Recomendación
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
@@ -261,7 +277,7 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
             <Grid item xs={12} md={6}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     <Assessment sx={{ mr: 1, verticalAlign: "middle" }} />
                     Rendimiento
                   </Typography>
@@ -310,6 +326,52 @@ const ViewLeaderModal = ({ open, onClose, leaderData }) => {
                       </Box>
                     )}
                   </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Lista de Votantes expandible */}
+            <Grid item xs={12}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Box
+                    onClick={() => setVotersExpanded(!votersExpanded)}
+                    sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+                  >
+                    <Typography variant="h6" sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
+                      <HowToVote sx={{ mr: 1, verticalAlign: "middle" }} />
+                      Votantes Asignados ({votersCount})
+                    </Typography>
+                    {votersExpanded ? <ExpandLess /> : <ExpandMore />}
+                  </Box>
+                  <Collapse in={votersExpanded} timeout="auto" unmountOnExit>
+                    <Divider sx={{ my: 2 }} />
+                    {votersList.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+                        Sin votantes asignados
+                      </Typography>
+                    ) : (
+                      <List disablePadding>
+                        {votersList.map((voter) => (
+                          <ListItem key={voter.identificacion} sx={{ py: 0.5, borderLeft: "3px solid", borderLeftColor: "primary.light" }}>
+                            <ListItemAvatar>
+                              <Avatar sx={{ bgcolor: "grey.400", width: 28, height: 28 }}>
+                                <HowToVote sx={{ fontSize: 14 }} />
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Typography variant="body2" fontSize="0.85rem">
+                                  {voter.nombre} {voter.apellido}
+                                </Typography>
+                              }
+                              secondary={`ID: ${voter.identificacion} | ${voter.ciudad || "-"}, ${voter.barrio || "-"}`}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )}
+                  </Collapse>
                 </CardContent>
               </Card>
             </Grid>

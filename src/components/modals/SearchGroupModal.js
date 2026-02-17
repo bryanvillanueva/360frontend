@@ -16,6 +16,7 @@ import {
   DialogActions,
   Button,
   Chip,
+  alpha,
 } from "@mui/material";
 import { Search as SearchIcon, Close, Group as GroupIcon } from "@mui/icons-material";
 import axios from "axios";
@@ -62,13 +63,13 @@ const SearchGroupModal = ({ open, onClose, onSelectGroup }) => {
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle
-        sx={{
-          background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+        sx={(theme) => ({
+          background: theme.palette.primary.main,
           color: "#fff",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-        }}
+        })}
       >
         Buscar Grupo
         <IconButton onClick={handleClose} sx={{ color: "#fff" }}>
@@ -94,13 +95,13 @@ const SearchGroupModal = ({ open, onClose, onSelectGroup }) => {
                 <Button
                   onClick={handleSearch}
                   disabled={loading}
-                  sx={{
-                    background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+                  sx={(theme) => ({
+                    background: theme.palette.primary.main,
                     color: "#fff",
                     "&:hover": {
-                      background: "linear-gradient(135deg, #016d7e 0%, #097d6b 100%)",
+                      background: theme.palette.primary.dark,
                     },
-                  }}
+                  })}
                 >
                   Buscar
                 </Button>
@@ -128,21 +129,21 @@ const SearchGroupModal = ({ open, onClose, onSelectGroup }) => {
               <ListItem key={group.id} disablePadding>
                 <ListItemButton
                   onClick={() => handleSelectGroup(group)}
-                  sx={{
+                  sx={(theme) => ({
                     border: "1px solid",
                     borderColor: "divider",
                     borderRadius: 2,
                     mb: 1,
                     transition: "all 0.3s",
                     "&:hover": {
-                      borderColor: "#018da5",
-                      backgroundColor: "rgba(1, 141, 165, 0.04)",
+                      borderColor: theme.palette.primary.main,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.04),
                       transform: "translateY(-2px)",
-                      boxShadow: "0 4px 12px rgba(1, 141, 165, 0.15)",
+                      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.15)}`,
                     },
-                  }}
+                  })}
                 >
-                  <GroupIcon sx={{ mr: 2, color: "#018da5" }} />
+                  <GroupIcon sx={(theme) => ({ mr: 2, color: theme.palette.primary.main })} />
                   <ListItemText
                     primary={
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

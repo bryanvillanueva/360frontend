@@ -23,6 +23,8 @@ import {
   CircularProgress,
   Tabs,
   Tab,
+  alpha,
+  Collapse,
 } from "@mui/material";
 import {
   Close,
@@ -37,6 +39,8 @@ import {
   BarChart,
   EmojiEvents,
   FlashOn,
+  ExpandMore,
+  ExpandLess,
 } from "@mui/icons-material";
 import {
   PieChart,
@@ -66,6 +70,7 @@ import {
   LabelList,
 } from "recharts";
 import axios from "axios";
+import theme from "../../theme";
 
 const ViewGroupModal = ({
   open,
@@ -79,11 +84,42 @@ const ViewGroupModal = ({
   const [error, setError] = useState(null);
   const [currentTab, setCurrentTab] = useState(0);
 
+  // Estados para cascada expandible
+  const [expandedRecomendados, setExpandedRecomendados] = useState({});
+  const [expandedLeaders, setExpandedLeaders] = useState({});
+  const [leaderVoters, setLeaderVoters] = useState({});
+
   useEffect(() => {
     if (open && selectedGrupo && grupoRecomendados.length > 0) {
       fetchGroupMetrics();
     }
+    if (!open) {
+      setExpandedRecomendados({});
+      setExpandedLeaders({});
+      setLeaderVoters({});
+    }
   }, [open, selectedGrupo, grupoRecomendados]);
+
+  const toggleRecomendado = (id) => {
+    setExpandedRecomendados(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleLeader = async (leaderId) => {
+    const isExpanding = !expandedLeaders[leaderId];
+    setExpandedLeaders(prev => ({ ...prev, [leaderId]: isExpanding }));
+
+    if (isExpanding && !leaderVoters[leaderId]) {
+      try {
+        const res = await axios.get(
+          `https://backend-node-soft360-production.up.railway.app/votantes/por-lider-detalle?lider=${leaderId}`
+        );
+        setLeaderVoters(prev => ({ ...prev, [leaderId]: res.data.votantes || [] }));
+      } catch (err) {
+        console.warn("Error al cargar votantes del líder:", err);
+        setLeaderVoters(prev => ({ ...prev, [leaderId]: [] }));
+      }
+    }
+  };
 
   const fetchGroupMetrics = async () => {
     setLoading(true);
@@ -221,24 +257,54 @@ const ViewGroupModal = ({
     return "Bajo";
   };
 
+  // Recharts colors from theme (Recharts can't use MUI theme callbacks)
+  const COLORS = {
+    primary: theme.palette.primary.main,
+    primaryDark: theme.palette.primary.dark,
+    primaryLight: theme.palette.primary.light,
+    success: theme.palette.success.main,
+    grey500: theme.palette.grey[500],
+    grey300: theme.palette.grey[300],
+    textSecondary: theme.palette.text.secondary,
+    textPrimary: theme.palette.text.primary,
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle
-        sx={{
-          background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+        sx={(theme) => ({
+          background: theme.palette.primary.main,
           color: "#fff",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-        }}
+        })}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Group />
           {selectedGrupo?.nombre} - Análisis de Rendimiento
         </Box>
-        <IconButton onClick={onClose} sx={{ color: "#fff" }}>
-          <Close />
-        </IconButton>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={onAddRecomendados}
+            size="small"
+            sx={{
+              bgcolor: "rgba(255,255,255,0.2)",
+              color: "#fff",
+              fontWeight: 600,
+              "&:hover": {
+                bgcolor: "rgba(255,255,255,0.35)",
+              },
+            }}
+          >
+            Agregar Recomendados
+          </Button>
+          <IconButton onClick={onClose} sx={{ color: "#fff" }}>
+            <Close />
+          </IconButton>
+        </Box>
       </DialogTitle>
 
       <DialogContent sx={{ p: 0 }}>
@@ -264,11 +330,197 @@ const ViewGroupModal = ({
               {/* Tab 1: Información General */}
               {currentTab === 0 && (
                 <Grid container spacing={3}>
+            {/* Lista Detallada de Recomendados con Cascada */}
+            <Grid item xs={12}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
+                    <Person sx={{ mr: 1, verticalAlign: "middle" }} />
+                    Recomendados del Grupo ({groupMetrics.enrichedRecomendados.length})
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+
+                  {groupMetrics.enrichedRecomendados.length > 0 ? (
+                    <List disablePadding>
+                      {groupMetrics.enrichedRecomendados.map((rec) => (
+                        <Box key={rec.identificacion}>
+                          <ListItem
+                            divider={!expandedRecomendados[rec.identificacion]}
+                            button
+                            onClick={() => toggleRecomendado(rec.identificacion)}
+                            sx={{ cursor: "pointer", "&:hover": { bgcolor: "action.hover" } }}
+                          >
+                            <ListItemAvatar>
+                              <Avatar sx={(theme) => ({ bgcolor: theme.palette.primary.main })}>
+                                <Person />
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <Typography variant="subtitle1" fontWeight={500}>
+                                    {rec.nombre} {rec.apellido}
+                                  </Typography>
+                                  <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                                    {rec.complianceRate !== null && (
+                                      <Chip
+                                        label={`${rec.complianceRate.toFixed(0)}%`}
+                                        size="small"
+                                        color={getComplianceColor(rec.complianceRate)}
+                                      />
+                                    )}
+                                    <Chip
+                                      label={`${rec.leadersCount} líderes`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                    {expandedRecomendados[rec.identificacion] ? <ExpandLess /> : <ExpandMore />}
+                                  </Box>
+                                </Box>
+                              }
+                              secondary={
+                                <Box sx={{ mt: 1 }}>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                                    ID: {rec.identificacion} | Cel: {rec.celular}
+                                  </Typography>
+                                  <Box sx={{ display: "flex", gap: 3, mt: 0.5 }}>
+                                    <Typography variant="caption" color="text.secondary">
+                                      <HowToVote sx={{ fontSize: 12, mr: 0.5 }} />
+                                      {rec.votersCount} votantes
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      <TrendingUp sx={{ fontSize: 12, mr: 0.5 }} />
+                                      {rec.expectedVoters} esperados
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      <SupervisorAccount sx={{ fontSize: 12, mr: 0.5 }} />
+                                      {rec.leadershipEfficiency.toFixed(1)} v/líder
+                                    </Typography>
+                                  </Box>
+                                  {rec.complianceRate !== null && (
+                                    <LinearProgress
+                                      variant="determinate"
+                                      value={Math.min(rec.complianceRate, 100)}
+                                      color={getComplianceColor(rec.complianceRate)}
+                                      sx={{ mt: 1, height: 4, borderRadius: 2 }}
+                                    />
+                                  )}
+                                </Box>
+                              }
+                            />
+                          </ListItem>
+
+                          {/* Líderes del recomendado (nivel 2) */}
+                          <Collapse in={expandedRecomendados[rec.identificacion]} timeout="auto" unmountOnExit>
+                            <List disablePadding sx={{ pl: 4, bgcolor: "grey.50" }}>
+                              {rec.leaders && rec.leaders.length > 0 ? (
+                                rec.leaders.map((leader) => (
+                                  <Box key={leader.lider_identificacion}>
+                                    <ListItem
+                                      button
+                                      onClick={() => toggleLeader(leader.lider_identificacion)}
+                                      sx={{ cursor: "pointer", "&:hover": { bgcolor: "action.hover" }, borderLeft: "3px solid", borderLeftColor: "primary.light" }}
+                                    >
+                                      <ListItemAvatar>
+                                        <Avatar sx={(theme) => ({ bgcolor: theme.palette.primary.light, width: 32, height: 32 })}>
+                                          <SupervisorAccount sx={{ fontSize: 18 }} />
+                                        </Avatar>
+                                      </ListItemAvatar>
+                                      <ListItemText
+                                        primary={
+                                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <Typography variant="body2" fontWeight={500}>
+                                              {leader.lider_nombre} {leader.lider_apellido}
+                                            </Typography>
+                                            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                                              <Chip
+                                                label={`${leader.votersCount} votantes`}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ height: 22, fontSize: "0.7rem" }}
+                                              />
+                                              {leader.complianceRate !== null && (
+                                                <Chip
+                                                  label={`${leader.complianceRate.toFixed(0)}%`}
+                                                  size="small"
+                                                  color={getComplianceColor(leader.complianceRate)}
+                                                  sx={{ height: 22, fontSize: "0.7rem" }}
+                                                />
+                                              )}
+                                              {expandedLeaders[leader.lider_identificacion] ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                                            </Box>
+                                          </Box>
+                                        }
+                                        secondary={`ID: ${leader.lider_identificacion} | Objetivo: ${leader.lider_objetivo || 0}`}
+                                      />
+                                    </ListItem>
+
+                                    {/* Votantes del líder (nivel 3) */}
+                                    <Collapse in={expandedLeaders[leader.lider_identificacion]} timeout="auto" unmountOnExit>
+                                      <List disablePadding sx={{ pl: 4, bgcolor: "grey.100" }}>
+                                        {!leaderVoters[leader.lider_identificacion] ? (
+                                          <ListItem>
+                                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                                            <Typography variant="caption">Cargando votantes...</Typography>
+                                          </ListItem>
+                                        ) : leaderVoters[leader.lider_identificacion].length === 0 ? (
+                                          <ListItem>
+                                            <Typography variant="caption" color="text.secondary">Sin votantes asignados</Typography>
+                                          </ListItem>
+                                        ) : (
+                                          leaderVoters[leader.lider_identificacion].map((voter) => (
+                                            <ListItem key={voter.identificacion} sx={{ py: 0.5, borderLeft: "3px solid", borderLeftColor: "grey.400" }}>
+                                              <ListItemAvatar>
+                                                <Avatar sx={{ bgcolor: "grey.400", width: 26, height: 26 }}>
+                                                  <HowToVote sx={{ fontSize: 14 }} />
+                                                </Avatar>
+                                              </ListItemAvatar>
+                                              <ListItemText
+                                                primary={
+                                                  <Typography variant="body2" fontSize="0.8rem">
+                                                    {voter.nombre} {voter.apellido}
+                                                  </Typography>
+                                                }
+                                                secondary={`ID: ${voter.identificacion} | ${voter.ciudad || "-"}, ${voter.barrio || "-"}`}
+                                              />
+                                            </ListItem>
+                                          ))
+                                        )}
+                                      </List>
+                                    </Collapse>
+                                  </Box>
+                                ))
+                              ) : (
+                                <ListItem>
+                                  <Typography variant="caption" color="text.secondary">Sin líderes asignados</Typography>
+                                </ListItem>
+                              )}
+                            </List>
+                          </Collapse>
+                        </Box>
+                      ))}
+                    </List>
+                  ) : (
+                    <Alert severity="info">
+                      No hay recomendados en este grupo.
+                      <Button
+                        onClick={onAddRecomendados}
+                        sx={{ ml: 1 }}
+                        size="small"
+                      >
+                        Agregar algunos
+                      </Button>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Métricas Generales */}
             <Grid item xs={12}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     <Assessment sx={{ mr: 1, verticalAlign: "middle" }} />
                     Métricas Generales del Grupo
                   </Typography>
@@ -354,171 +606,55 @@ const ViewGroupModal = ({
               </Card>
             </Grid>
 
-            {/* Mejores Recomendados */}
-            <Grid item xs={12} md={6}>
+            {/* Mejor Rendimiento (full width) */}
+            <Grid item xs={12}>
               <Card elevation={2}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
+                  <Typography variant="h6" gutterBottom sx={(theme) => ({ color: theme.palette.primary.main, fontWeight: 600 })}>
                     <Star sx={{ mr: 1, verticalAlign: "middle" }} />
                     Mejor Rendimiento
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
 
-                  {groupMetrics.bestRecomendado && (
-                    <Box sx={{ mb: 3, p: 2, bgcolor: "#e8f5e9", borderRadius: 1, border: "1px solid #c8e6c9" }}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                        <EmojiEvents sx={{ color: "#2e7d32", fontSize: 24 }} />
-                        <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#1b5e20" }}>
-                          {groupMetrics.bestRecomendado.nombre} {groupMetrics.bestRecomendado.apellido}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" sx={{ color: "#2e7d32" }}>
-                        Tasa de cumplimiento: {groupMetrics.bestRecomendado.complianceRate?.toFixed(1)}%
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "#388e3c" }}>
-                        {groupMetrics.bestRecomendado.votersCount} votantes de {groupMetrics.bestRecomendado.expectedVoters} esperados
-                      </Typography>
-                    </Box>
-                  )}
+                  <Grid container spacing={2}>
+                    {groupMetrics.bestRecomendado && (
+                      <Grid item xs={12} md={6}>
+                        <Box sx={{ p: 2, bgcolor: "#e8f5e9", borderRadius: 1, border: "1px solid #c8e6c9", height: "100%" }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                            <EmojiEvents sx={{ color: "#2e7d32", fontSize: 24 }} />
+                            <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#1b5e20" }}>
+                              {groupMetrics.bestRecomendado.nombre} {groupMetrics.bestRecomendado.apellido}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ color: "#2e7d32" }}>
+                            Tasa de cumplimiento: {groupMetrics.bestRecomendado.complianceRate?.toFixed(1)}%
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "#388e3c" }}>
+                            {groupMetrics.bestRecomendado.votersCount} votantes de {groupMetrics.bestRecomendado.expectedVoters} esperados
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
 
-                  {groupMetrics.mostEfficientRecomendado && (
-                    <Box sx={{ p: 2, bgcolor: "#e3f2fd", borderRadius: 1, border: "1px solid #bbdefb" }}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                        <FlashOn sx={{ color: "#1976d2", fontSize: 24 }} />
-                        <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#0d47a1" }}>
-                          {groupMetrics.mostEfficientRecomendado.nombre} {groupMetrics.mostEfficientRecomendado.apellido}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" sx={{ color: "#1976d2" }}>
-                        Mayor eficiencia de liderazgo
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "#1976d2" }}>
-                        {groupMetrics.mostEfficientRecomendado.leadershipEfficiency.toFixed(1)} votantes por líder
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Acciones Rápidas */}
-            <Grid item xs={12} md={6}>
-              <Card elevation={2}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
-                    Acciones del Grupo
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-
-                  <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={onAddRecomendados}
-                    fullWidth
-                    sx={{
-                      mb: 2,
-                      bgcolor: "#018da5",
-                      "&:hover": {
-                        bgcolor: "#016f80",
-                      },
-                    }}
-                  >
-                    Agregar Recomendados
-                  </Button>
-
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
-                    Gestiona los miembros y mejora el rendimiento del grupo
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Lista Detallada de Recomendados */}
-            <Grid item xs={12}>
-              <Card elevation={2}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#018da5", fontWeight: 600 }}>
-                    <Person sx={{ mr: 1, verticalAlign: "middle" }} />
-                    Recomendados del Grupo ({groupMetrics.enrichedRecomendados.length})
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-
-                  {groupMetrics.enrichedRecomendados.length > 0 ? (
-                    <List>
-                      {groupMetrics.enrichedRecomendados.map((rec) => (
-                        <ListItem key={rec.identificacion} divider>
-                          <ListItemAvatar>
-                            <Avatar sx={{ bgcolor: "#018da5" }}>
-                              <Person />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <Typography variant="subtitle1" fontWeight={500}>
-                                  {rec.nombre} {rec.apellido}
-                                </Typography>
-                                <Box sx={{ display: "flex", gap: 1 }}>
-                                  {rec.complianceRate !== null && (
-                                    <Chip
-                                      label={`${rec.complianceRate.toFixed(0)}%`}
-                                      size="small"
-                                      color={getComplianceColor(rec.complianceRate)}
-                                    />
-                                  )}
-                                  <Chip
-                                    label={`${rec.leadersCount} líderes`}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                </Box>
-                              </Box>
-                            }
-                            secondary={
-                              <Box sx={{ mt: 1 }}>
-                                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                  ID: {rec.identificacion} | Cel: {rec.celular}
-                                </Typography>
-                                <Box sx={{ display: "flex", gap: 3, mt: 0.5 }}>
-                                  <Typography variant="caption" color="text.secondary">
-                                    <HowToVote sx={{ fontSize: 12, mr: 0.5 }} />
-                                    {rec.votersCount} votantes
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    <TrendingUp sx={{ fontSize: 12, mr: 0.5 }} />
-                                    {rec.expectedVoters} esperados
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    <SupervisorAccount sx={{ fontSize: 12, mr: 0.5 }} />
-                                    {rec.leadershipEfficiency.toFixed(1)} v/líder
-                                  </Typography>
-                                </Box>
-                                {rec.complianceRate !== null && (
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={Math.min(rec.complianceRate, 100)}
-                                    color={getComplianceColor(rec.complianceRate)}
-                                    sx={{ mt: 1, height: 4, borderRadius: 2 }}
-                                  />
-                                )}
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  ) : (
-                    <Alert severity="info">
-                      No hay recomendados en este grupo.
-                      <Button
-                        onClick={onAddRecomendados}
-                        sx={{ ml: 1 }}
-                        size="small"
-                      >
-                        Agregar algunos
-                      </Button>
-                    </Alert>
-                  )}
+                    {groupMetrics.mostEfficientRecomendado && (
+                      <Grid item xs={12} md={6}>
+                        <Box sx={(theme) => ({ p: 2, bgcolor: theme.palette.background.subtle, borderRadius: 1, border: `1px solid ${theme.palette.primary.light}`, height: "100%" })}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                            <FlashOn sx={(theme) => ({ color: theme.palette.primary.main, fontSize: 24 })} />
+                            <Typography variant="subtitle1" fontWeight={600} sx={(theme) => ({ color: theme.palette.primary.dark })}>
+                              {groupMetrics.mostEfficientRecomendado.nombre} {groupMetrics.mostEfficientRecomendado.apellido}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={(theme) => ({ color: theme.palette.primary.main })}>
+                            Mayor eficiencia de liderazgo
+                          </Typography>
+                          <Typography variant="caption" sx={(theme) => ({ color: theme.palette.primary.main })}>
+                            {groupMetrics.mostEfficientRecomendado.leadershipEfficiency.toFixed(1)} votantes por líder
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
                 </CardContent>
               </Card>
             </Grid>
@@ -532,8 +668,8 @@ const ViewGroupModal = ({
                   <Grid item xs={12}>
                     <Grid container spacing={2}>
                       <Grid item xs={6} md={3}>
-                        <Card elevation={0} sx={{
-                          background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+                        <Card elevation={0} sx={(theme) => ({
+                          background: theme.palette.primary.main,
                           color: "#fff",
                           borderRadius: 2.5,
                           position: "relative",
@@ -541,7 +677,7 @@ const ViewGroupModal = ({
                           transition: "transform 0.2s",
                           "&:hover": {
                             transform: "translateY(-4px)",
-                            boxShadow: "0 8px 24px rgba(1, 141, 165, 0.3)"
+                            boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`
                           },
                           "&::before": {
                             content: '""',
@@ -553,7 +689,7 @@ const ViewGroupModal = ({
                             borderRadius: "50%",
                             background: "rgba(255,255,255,0.1)"
                           }
-                        }}>
+                        })}>
                           <CardContent sx={{ position: "relative", zIndex: 1 }}>
                             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                               <Box>
@@ -570,8 +706,8 @@ const ViewGroupModal = ({
                         </Card>
                       </Grid>
                       <Grid item xs={6} md={3}>
-                        <Card elevation={0} sx={{
-                          background: "linear-gradient(135deg, #67ddab 0%, #0b9b8a 100%)",
+                        <Card elevation={0} sx={(theme) => ({
+                          background: theme.palette.success.main,
                           color: "#fff",
                           borderRadius: 2.5,
                           position: "relative",
@@ -579,7 +715,7 @@ const ViewGroupModal = ({
                           transition: "transform 0.2s",
                           "&:hover": {
                             transform: "translateY(-4px)",
-                            boxShadow: "0 8px 24px rgba(103, 221, 171, 0.3)"
+                            boxShadow: `0 8px 24px ${alpha(theme.palette.success.main, 0.3)}`
                           },
                           "&::before": {
                             content: '""',
@@ -591,7 +727,7 @@ const ViewGroupModal = ({
                             borderRadius: "50%",
                             background: "rgba(255,255,255,0.1)"
                           }
-                        }}>
+                        })}>
                           <CardContent sx={{ position: "relative", zIndex: 1 }}>
                             <SupervisorAccount sx={{ fontSize: 32, mb: 1, opacity: 0.9 }} />
                             <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -604,8 +740,8 @@ const ViewGroupModal = ({
                         </Card>
                       </Grid>
                       <Grid item xs={6} md={3}>
-                        <Card elevation={0} sx={{
-                          background: "linear-gradient(135deg, #80daeb 0%, #018da5 100%)",
+                        <Card elevation={0} sx={(theme) => ({
+                          background: theme.palette.primary.light,
                           color: "#fff",
                           borderRadius: 2.5,
                           position: "relative",
@@ -613,7 +749,7 @@ const ViewGroupModal = ({
                           transition: "transform 0.2s",
                           "&:hover": {
                             transform: "translateY(-4px)",
-                            boxShadow: "0 8px 24px rgba(128, 218, 235, 0.3)"
+                            boxShadow: `0 8px 24px ${alpha(theme.palette.primary.light, 0.3)}`
                           },
                           "&::before": {
                             content: '""',
@@ -625,7 +761,7 @@ const ViewGroupModal = ({
                             borderRadius: "50%",
                             background: "rgba(255,255,255,0.1)"
                           }
-                        }}>
+                        })}>
                           <CardContent sx={{ position: "relative", zIndex: 1 }}>
                             <EmojiEvents sx={{ fontSize: 32, mb: 1, opacity: 0.9 }} />
                             <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -638,8 +774,8 @@ const ViewGroupModal = ({
                         </Card>
                       </Grid>
                       <Grid item xs={6} md={3}>
-                        <Card elevation={0} sx={{
-                          background: "linear-gradient(135deg, #909090 0%, #666 100%)",
+                        <Card elevation={0} sx={(theme) => ({
+                          background: theme.palette.grey[500],
                           color: "#fff",
                           borderRadius: 2.5,
                           position: "relative",
@@ -647,7 +783,7 @@ const ViewGroupModal = ({
                           transition: "transform 0.2s",
                           "&:hover": {
                             transform: "translateY(-4px)",
-                            boxShadow: "0 8px 24px rgba(144, 144, 144, 0.3)"
+                            boxShadow: `0 8px 24px ${alpha(theme.palette.grey[500], 0.3)}`
                           },
                           "&::before": {
                             content: '""',
@@ -659,7 +795,7 @@ const ViewGroupModal = ({
                             borderRadius: "50%",
                             background: "rgba(255,255,255,0.1)"
                           }
-                        }}>
+                        })}>
                           <CardContent sx={{ position: "relative", zIndex: 1 }}>
                             <Group sx={{ fontSize: 32, mb: 1, opacity: 0.9 }} />
                             <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -676,24 +812,24 @@ const ViewGroupModal = ({
 
                   {/* Gráfico Compuesto Avanzado - Área + Línea + Barras */}
                   <Grid item xs={12} md={8}>
-                    <Card elevation={0} sx={{
-                      border: "1px solid #e0e0e0",
+                    <Card elevation={0} sx={(theme) => ({
+                      border: `1px solid ${theme.palette.grey[300]}`,
                       borderRadius: 2.5,
                       background: "#fff",
                       boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
-                    }}>
+                    })}>
                       <CardContent>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <BarChart sx={{ color: "#018da5" }} />
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                            <BarChart sx={(theme) => ({ color: theme.palette.primary.main })} />
+                            <Typography variant="h6" sx={(theme) => ({ fontWeight: 600, color: theme.palette.text.primary })}>
                               Análisis de Rendimiento Integral
                             </Typography>
                           </Box>
                           <Chip
                             label="Vista Combinada"
                             size="small"
-                            sx={{ bgcolor: "#f0f9fa", color: "#018da5", fontWeight: 600 }}
+                            sx={(theme) => ({ bgcolor: theme.palette.background.subtle, color: theme.palette.primary.main, fontWeight: 600 })}
                           />
                         </Box>
                         <Divider sx={{ mb: 3 }} />
@@ -711,32 +847,32 @@ const ViewGroupModal = ({
                           >
                             <defs>
                               <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#80daeb" stopOpacity={0.8}/>
-                                <stop offset="95%" stopColor="#80daeb" stopOpacity={0.1}/>
+                                <stop offset="5%" stopColor={COLORS.primaryLight} stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor={COLORS.primaryLight} stopOpacity={0.1}/>
                               </linearGradient>
                               <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#018da5" stopOpacity={1}/>
-                                <stop offset="95%" stopColor="#0b9b8a" stopOpacity={0.9}/>
+                                <stop offset="5%" stopColor={COLORS.primary} stopOpacity={1}/>
+                                <stop offset="95%" stopColor={COLORS.primaryDark} stopOpacity={0.9}/>
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grey300} vertical={false} />
                             <XAxis
                               dataKey="nombre"
-                              tick={{ fontSize: 11, fill: "#666" }}
-                              axisLine={{ stroke: "#e0e0e0" }}
+                              tick={{ fontSize: 11, fill: COLORS.textSecondary }}
+                              axisLine={{ stroke: COLORS.grey300 }}
                             />
                             <YAxis
                               yAxisId="left"
-                              tick={{ fontSize: 11, fill: "#666" }}
-                              axisLine={{ stroke: "#e0e0e0" }}
-                              label={{ value: 'Votantes', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#666' } }}
+                              tick={{ fontSize: 11, fill: COLORS.textSecondary }}
+                              axisLine={{ stroke: COLORS.grey300 }}
+                              label={{ value: 'Votantes', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: COLORS.textSecondary } }}
                             />
                             <YAxis
                               yAxisId="right"
                               orientation="right"
-                              tick={{ fontSize: 11, fill: "#666" }}
-                              axisLine={{ stroke: "#e0e0e0" }}
-                              label={{ value: 'Cumplimiento %', angle: 90, position: 'insideRight', style: { fontSize: 11, fill: '#666' } }}
+                              tick={{ fontSize: 11, fill: COLORS.textSecondary }}
+                              axisLine={{ stroke: COLORS.grey300 }}
+                              label={{ value: 'Cumplimiento %', angle: 90, position: 'insideRight', style: { fontSize: 11, fill: COLORS.textSecondary } }}
                             />
                             <Tooltip
                               contentStyle={{
@@ -755,7 +891,7 @@ const ViewGroupModal = ({
                               type="monotone"
                               dataKey="esperado"
                               fill="url(#areaGradient)"
-                              stroke="#80daeb"
+                              stroke={COLORS.primaryLight}
                               strokeWidth={2}
                               name="Meta Esperada"
                             />
@@ -771,9 +907,9 @@ const ViewGroupModal = ({
                               yAxisId="right"
                               type="monotone"
                               dataKey="cumplimiento"
-                              stroke="#67ddab"
+                              stroke={COLORS.success}
                               strokeWidth={3}
-                              dot={{ fill: "#67ddab", r: 5 }}
+                              dot={{ fill: COLORS.success, r: 5 }}
                               activeDot={{ r: 7 }}
                               name="% Cumplimiento"
                             />
@@ -785,16 +921,16 @@ const ViewGroupModal = ({
 
                   {/* Treemap - Distribución Jerárquica de Votantes */}
                   <Grid item xs={12} md={4}>
-                    <Card elevation={0} sx={{
-                      border: "1px solid #e0e0e0",
+                    <Card elevation={0} sx={(theme) => ({
+                      border: `1px solid ${theme.palette.grey[300]}`,
                       borderRadius: 2.5,
                       background: "#fff",
                       boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
-                    }}>
+                    })}>
                       <CardContent>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                          <Group sx={{ color: "#018da5" }} />
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                          <Group sx={(theme) => ({ color: theme.palette.primary.main })} />
+                          <Typography variant="h6" sx={(theme) => ({ fontWeight: 600, color: theme.palette.text.primary })}>
                             Mapa de Distribución
                           </Typography>
                         </Box>
@@ -812,7 +948,7 @@ const ViewGroupModal = ({
                             stroke="#fff"
                             strokeWidth={2}
                             content={({ x, y, width, height, name, size, compliance, leaders }) => {
-                              const colors = ['#018da5', '#67ddab', '#80daeb', '#0b9b8a', '#909090'];
+                              const colors = [COLORS.primary, COLORS.success, COLORS.primaryLight, COLORS.primaryDark, COLORS.grey500];
                               const color = colors[Math.floor(Math.random() * colors.length)];
 
                               return (
@@ -879,13 +1015,13 @@ const ViewGroupModal = ({
                                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
                                       {data.name}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                    <Typography variant="caption" sx={(theme) => ({ display: "block", color: theme.palette.text.secondary })}>
                                       Votantes: {data.size}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                    <Typography variant="caption" sx={(theme) => ({ display: "block", color: theme.palette.text.secondary })}>
                                       Cumplimiento: {data.compliance.toFixed(1)}%
                                     </Typography>
-                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                    <Typography variant="caption" sx={(theme) => ({ display: "block", color: theme.palette.text.secondary })}>
                                       Líderes: {data.leaders}
                                     </Typography>
                                   </Box>
@@ -900,28 +1036,28 @@ const ViewGroupModal = ({
 
                   {/* Gráfico de Burbujas (Scatter) - Análisis Multidimensional */}
                   <Grid item xs={12} md={7}>
-                    <Card elevation={0} sx={{
-                      border: "1px solid #e0e0e0",
+                    <Card elevation={0} sx={(theme) => ({
+                      border: `1px solid ${theme.palette.grey[300]}`,
                       borderRadius: 2.5,
                       background: "#fff",
                       boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
-                    }}>
+                    })}>
                       <CardContent>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <TrendingUp sx={{ color: "#018da5" }} />
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                            <TrendingUp sx={(theme) => ({ color: theme.palette.primary.main })} />
+                            <Typography variant="h6" sx={(theme) => ({ fontWeight: 600, color: theme.palette.text.primary })}>
                               Matriz de Rendimiento
                             </Typography>
                           </Box>
                           <Chip
                             label="Vista Multidimensional"
                             size="small"
-                            sx={{ bgcolor: "#f0f9fa", color: "#018da5", fontWeight: 600 }}
+                            sx={(theme) => ({ bgcolor: theme.palette.background.subtle, color: theme.palette.primary.main, fontWeight: 600 })}
                           />
                         </Box>
                         <Divider sx={{ mb: 2 }} />
-                        <Typography variant="caption" sx={{ color: "#666", display: "block", mb: 2 }}>
+                        <Typography variant="caption" sx={(theme) => ({ color: theme.palette.text.secondary, display: "block", mb: 2 })}>
                           Tamaño de burbuja = Número de líderes | Eje X = Votantes | Eje Y = % Cumplimiento
                         </Typography>
                         <ResponsiveContainer width="100%" height={400}>
@@ -930,34 +1066,34 @@ const ViewGroupModal = ({
                           >
                             <defs>
                               <linearGradient id="bubbleGradient1" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stopColor="#018da5" stopOpacity={0.8}/>
-                                <stop offset="100%" stopColor="#0b9b8a" stopOpacity={0.9}/>
+                                <stop offset="0%" stopColor={COLORS.primary} stopOpacity={0.8}/>
+                                <stop offset="100%" stopColor={COLORS.primaryDark} stopOpacity={0.9}/>
                               </linearGradient>
                               <linearGradient id="bubbleGradient2" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stopColor="#67ddab" stopOpacity={0.8}/>
-                                <stop offset="100%" stopColor="#0b9b8a" stopOpacity={0.9}/>
+                                <stop offset="0%" stopColor={COLORS.success} stopOpacity={0.8}/>
+                                <stop offset="100%" stopColor={COLORS.primaryDark} stopOpacity={0.9}/>
                               </linearGradient>
                               <linearGradient id="bubbleGradient3" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stopColor="#80daeb" stopOpacity={0.8}/>
-                                <stop offset="100%" stopColor="#018da5" stopOpacity={0.9}/>
+                                <stop offset="0%" stopColor={COLORS.primaryLight} stopOpacity={0.8}/>
+                                <stop offset="100%" stopColor={COLORS.primary} stopOpacity={0.9}/>
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grey300} />
                             <XAxis
                               type="number"
                               dataKey="votantes"
                               name="Votantes"
-                              tick={{ fontSize: 11, fill: "#666" }}
-                              axisLine={{ stroke: "#e0e0e0" }}
-                              label={{ value: 'Votantes Actuales', position: 'insideBottom', offset: -10, style: { fontSize: 11, fill: '#666' } }}
+                              tick={{ fontSize: 11, fill: COLORS.textSecondary }}
+                              axisLine={{ stroke: COLORS.grey300 }}
+                              label={{ value: 'Votantes Actuales', position: 'insideBottom', offset: -10, style: { fontSize: 11, fill: COLORS.textSecondary } }}
                             />
                             <YAxis
                               type="number"
                               dataKey="cumplimiento"
                               name="Cumplimiento"
-                              tick={{ fontSize: 11, fill: "#666" }}
-                              axisLine={{ stroke: "#e0e0e0" }}
-                              label={{ value: '% Cumplimiento', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#666' } }}
+                              tick={{ fontSize: 11, fill: COLORS.textSecondary }}
+                              axisLine={{ stroke: COLORS.grey300 }}
+                              label={{ value: '% Cumplimiento', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: COLORS.textSecondary } }}
                             />
                             <ZAxis
                               type="number"
@@ -981,16 +1117,16 @@ const ViewGroupModal = ({
                                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                                       {data.nombre}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                    <Typography variant="caption" sx={(theme) => ({ display: "block", color: theme.palette.text.secondary })}>
                                       Votantes: {data.votantes}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                    <Typography variant="caption" sx={(theme) => ({ display: "block", color: theme.palette.text.secondary })}>
                                       Cumplimiento: {data.cumplimiento.toFixed(1)}%
                                     </Typography>
-                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                    <Typography variant="caption" sx={(theme) => ({ display: "block", color: theme.palette.text.secondary })}>
                                       Líderes: {data.lideres}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ display: "block", color: "#666" }}>
+                                    <Typography variant="caption" sx={(theme) => ({ display: "block", color: theme.palette.text.secondary })}>
                                       Eficiencia: {data.eficiencia.toFixed(1)} v/líder
                                     </Typography>
                                   </Box>
@@ -1024,16 +1160,16 @@ const ViewGroupModal = ({
 
                   {/* Gráfico Radar Mejorado */}
                   <Grid item xs={12} md={5}>
-                    <Card elevation={0} sx={{
-                      border: "1px solid #e0e0e0",
+                    <Card elevation={0} sx={(theme) => ({
+                      border: `1px solid ${theme.palette.grey[300]}`,
                       borderRadius: 2.5,
                       background: "#fff",
                       boxShadow: "0 2px 12px rgba(0,0,0,0.04)"
-                    }}>
+                    })}>
                       <CardContent>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                          <Assessment sx={{ color: "#018da5" }} />
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                          <Assessment sx={(theme) => ({ color: theme.palette.primary.main })} />
+                          <Typography variant="h6" sx={(theme) => ({ fontWeight: 600, color: theme.palette.text.primary })}>
                             Análisis Radar
                           </Typography>
                         </Box>
@@ -1050,18 +1186,18 @@ const ViewGroupModal = ({
                           >
                             <defs>
                               <radialGradient id="radarGradient1">
-                                <stop offset="0%" stopColor="#018da5" stopOpacity={0.6}/>
-                                <stop offset="100%" stopColor="#018da5" stopOpacity={0.2}/>
+                                <stop offset="0%" stopColor={COLORS.primary} stopOpacity={0.6}/>
+                                <stop offset="100%" stopColor={COLORS.primary} stopOpacity={0.2}/>
                               </radialGradient>
                               <radialGradient id="radarGradient2">
-                                <stop offset="0%" stopColor="#67ddab" stopOpacity={0.6}/>
-                                <stop offset="100%" stopColor="#67ddab" stopOpacity={0.2}/>
+                                <stop offset="0%" stopColor={COLORS.success} stopOpacity={0.6}/>
+                                <stop offset="100%" stopColor={COLORS.success} stopOpacity={0.2}/>
                               </radialGradient>
                             </defs>
-                            <PolarGrid stroke="#e0e0e0" strokeWidth={1.5} />
+                            <PolarGrid stroke={COLORS.grey300} strokeWidth={1.5} />
                             <PolarAngleAxis
                               dataKey="recomendado"
-                              tick={{ fontSize: 11, fill: "#666", fontWeight: 500 }}
+                              tick={{ fontSize: 11, fill: COLORS.textSecondary, fontWeight: 500 }}
                             />
                             <PolarRadiusAxis
                               angle={90}
@@ -1071,18 +1207,18 @@ const ViewGroupModal = ({
                             <Radar
                               name="Cumplimiento %"
                               dataKey="cumplimiento"
-                              stroke="#018da5"
+                              stroke={COLORS.primary}
                               fill="url(#radarGradient1)"
                               strokeWidth={3}
-                              dot={{ fill: "#018da5", r: 4 }}
+                              dot={{ fill: COLORS.primary, r: 4 }}
                             />
                             <Radar
                               name="Eficiencia"
                               dataKey="eficiencia"
-                              stroke="#67ddab"
+                              stroke={COLORS.success}
                               fill="url(#radarGradient2)"
                               strokeWidth={3}
-                              dot={{ fill: "#67ddab", r: 4 }}
+                              dot={{ fill: COLORS.success, r: 4 }}
                             />
                             <Legend
                               wrapperStyle={{ fontSize: 11, paddingTop: 15 }}
@@ -1105,15 +1241,15 @@ const ViewGroupModal = ({
 
                   {/* Ranking de Cumplimiento Mejorado */}
                   <Grid item xs={12} md={6}>
-                    <Card elevation={0} sx={{
-                      border: "1px solid #e0e0e0",
+                    <Card elevation={0} sx={(theme) => ({
+                      border: `1px solid ${theme.palette.grey[300]}`,
                       borderRadius: 2,
                       background: "#fff"
-                    }}>
+                    })}>
                       <CardContent>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                          <EmojiEvents sx={{ color: "#018da5" }} />
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: "#333" }}>
+                          <EmojiEvents sx={(theme) => ({ color: theme.palette.primary.main })} />
+                          <Typography variant="h6" sx={(theme) => ({ fontWeight: 600, color: theme.palette.text.primary })}>
                             Ranking de Cumplimiento
                           </Typography>
                         </Box>
@@ -1122,7 +1258,7 @@ const ViewGroupModal = ({
                           {groupMetrics.enrichedRecomendados.map((rec, idx) => (
                             <Box key={idx} sx={{ mb: 3 }}>
                               <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-                                <Box sx={{
+                                <Box sx={(theme) => ({
                                   minWidth: 32,
                                   height: 32,
                                   borderRadius: "50%",
@@ -1134,10 +1270,10 @@ const ViewGroupModal = ({
                                   alignItems: "center",
                                   justifyContent: "center",
                                   fontWeight: 700,
-                                  color: idx < 3 ? "#fff" : "#666",
+                                  color: idx < 3 ? "#fff" : theme.palette.text.secondary,
                                   fontSize: "0.875rem",
                                   boxShadow: idx < 3 ? "0 2px 4px rgba(0,0,0,0.2)" : "none"
-                                }}>
+                                })}>
                                   {idx + 1}
                                 </Box>
                                 <Box sx={{ flex: 1 }}>
@@ -1160,10 +1296,10 @@ const ViewGroupModal = ({
                                     variant="determinate"
                                     value={Math.min(rec.complianceRate || 0, 100)}
                                     color={getComplianceColor(rec.complianceRate || 0)}
-                                    sx={{
+                                    sx={(theme) => ({
                                       height: 10,
                                       borderRadius: 5,
-                                      bgcolor: "#f5f5f5",
+                                      bgcolor: theme.palette.background.subtle,
                                       "& .MuiLinearProgress-bar": {
                                         borderRadius: 5,
                                         background: rec.complianceRate >= 80
@@ -1172,7 +1308,7 @@ const ViewGroupModal = ({
                                           ? "linear-gradient(90deg, #ff9800 0%, #ffc107 100%)"
                                           : "linear-gradient(90deg, #f44336 0%, #e57373 100%)"
                                       }
-                                    }}
+                                    })}
                                   />
                                   <Box sx={{ display: "flex", gap: 2, mt: 0.5 }}>
                                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
@@ -1204,12 +1340,12 @@ const ViewGroupModal = ({
                 variant="contained"
                 startIcon={<Add />}
                 onClick={onAddRecomendados}
-                sx={{
-                  bgcolor: "#018da5",
+                sx={(theme) => ({
+                  bgcolor: theme.palette.primary.main,
                   "&:hover": {
-                    bgcolor: "#016f80",
+                    bgcolor: theme.palette.primary.dark,
                   },
-                }}
+                })}
               >
                 Agregar Recomendados
               </Button>
@@ -1220,7 +1356,7 @@ const ViewGroupModal = ({
                 {grupoRecomendados.map((rec) => (
                   <ListItem key={rec.identificacion}>
                     <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: "#018da5" }}>
+                      <Avatar sx={(theme) => ({ bgcolor: theme.palette.primary.main })}>
                         <Person />
                       </Avatar>
                     </ListItemAvatar>

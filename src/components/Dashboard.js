@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
   Grid,
-  Paper,
   Card,
   CardContent,
   Chip,
@@ -12,43 +11,26 @@ import {
   LinearProgress,
   Avatar,
   Alert,
+  alpha,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import axios from "axios";
 import {
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
   Legend,
-  BarChart,
   Bar,
   AreaChart,
   Area,
   ComposedChart,
-  PieChart,
-  Pie,
-  Cell,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-  ScatterChart,
-  Scatter,
-  ZAxis,
-  Treemap,
 } from "recharts";
 import {
   TrendingUp,
-  TrendingDown,
-  Assessment,
   EmojiEvents,
   Warning,
-  CheckCircle,
   HowToVote,
   SupervisorAccount,
   Speed,
@@ -57,15 +39,120 @@ import {
   LocationOn,
   Timeline,
 } from "@mui/icons-material";
+import mapboxgl from "mapbox-gl";
 import PageHeader from "./ui/PageHeader";
+import theme from "../theme";
+import colombiaCityCoords from "../data/colombiaCityCoords";
+
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Initialize Mapbox map when data is ready
+  useEffect(() => {
+    if (!dashboardData || !mapContainerRef.current || mapRef.current) return;
+
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: "mapbox://styles/mapbox/light-v11",
+      center: [-74.3, 4.5],
+      zoom: 4,
+    });
+
+    mapRef.current = map;
+
+    map.on("load", () => {
+      // Build GeoJSON from voter city distribution
+      const features = Object.entries(dashboardData.distribucion.ciudadesRaw || {})
+        .map(([ciudad, count]) => {
+          const key = ciudad.toLowerCase().trim();
+          const coords = colombiaCityCoords[key];
+          if (!coords) return null;
+          return {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: coords },
+            properties: { ciudad, count },
+          };
+        })
+        .filter(Boolean);
+
+      map.addSource("voters", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features },
+      });
+
+      map.addLayer({
+        id: "voter-circles",
+        type: "circle",
+        source: "voters",
+        paint: {
+          "circle-radius": [
+            "interpolate", ["linear"], ["get", "count"],
+            1, 6,
+            50, 14,
+            200, 22,
+            1000, 36,
+          ],
+          "circle-color": theme.palette.primary.main,
+          "circle-opacity": 0.7,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#fff",
+        },
+      });
+
+      // Add count labels
+      map.addLayer({
+        id: "voter-labels",
+        type: "symbol",
+        source: "voters",
+        layout: {
+          "text-field": ["get", "count"],
+          "text-size": 11,
+          "text-font": ["DIN Pro Medium", "Arial Unicode MS Regular"],
+          "text-allow-overlap": true,
+        },
+        paint: {
+          "text-color": "#fff",
+        },
+      });
+
+      // Popup on click
+      map.on("click", "voter-circles", (e) => {
+        const { ciudad, count } = e.features[0].properties;
+        new mapboxgl.Popup({ closeButton: false, offset: 15 })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<div style="font-family:Montserrat,sans-serif;padding:4px 0">` +
+            `<strong style="font-size:14px">${ciudad}</strong><br/>` +
+            `<span style="color:${theme.palette.text.secondary}">${count} votantes</span>` +
+            `</div>`
+          )
+          .addTo(map);
+      });
+
+      map.on("mouseenter", "voter-circles", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "voter-circles", () => {
+        map.getCanvas().style.cursor = "";
+      });
+
+      map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    });
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [dashboardData]);
 
   const fetchDashboardData = async () => {
     try {
@@ -226,6 +313,7 @@ const Dashboard = () => {
         distribucion: {
           departamentos: topDepartamentos,
           ciudades: topCiudades,
+          ciudadesRaw: distribucionCiudad,
           barrios: topBarrios,
         },
         trendData,
@@ -268,10 +356,22 @@ const Dashboard = () => {
     );
   }
 
-  const { totals, metrics, topLideres, lideresEnRiesgo, distribucion, trendData, gruposPerformance } = dashboardData;
+  const { totals, metrics, topLideres, lideresEnRiesgo, trendData, gruposPerformance } = dashboardData;
+
+  // Recharts color references (plain strings needed for SVG)
+  const rechartsColors = {
+    primaryMain: theme.palette.primary.main,
+    primaryDark: theme.palette.primary.dark,
+    primaryLight: theme.palette.primary.light,
+    warningMain: theme.palette.warning.main,
+    grey500: theme.palette.grey[500],
+    grey300: theme.palette.grey[300],
+    textSecondary: theme.palette.text.secondary,
+  };
+
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f8f9fa", pb: 4 }}>
+    <Box sx={(theme) => ({ minHeight: "100vh", bgcolor: theme.palette.background.subtle, pb: 4 })}>
       <PageHeader
         title="Panel de Control Electoral"
         description="Monitoreo en tiempo real de métricas clave y rendimiento de campaña"
@@ -280,16 +380,16 @@ const Dashboard = () => {
       {/* KPI Cards Principales */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{
-            background: "linear-gradient(135deg, #018da5 0%, #0b9b8a 100%)",
+          <Card elevation={0} sx={(theme) => ({
+            background: theme.palette.primary.main,
             color: "#fff",
             borderRadius: 2.5,
             transition: "transform 0.2s",
             "&:hover": {
               transform: "translateY(-4px)",
-              boxShadow: "0 8px 24px rgba(1, 141, 165, 0.3)"
+              boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`
             }
-          }}>
+          })}>
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <Box sx={{ flex: 1 }}>
@@ -307,16 +407,16 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{
-            background: "linear-gradient(135deg, #67ddab 0%, #0b9b8a 100%)",
+          <Card elevation={0} sx={(theme) => ({
+            background: theme.palette.primary.dark,
             color: "#fff",
             borderRadius: 2.5,
             transition: "transform 0.2s",
             "&:hover": {
               transform: "translateY(-4px)",
-              boxShadow: "0 8px 24px rgba(103, 221, 171, 0.3)"
+              boxShadow: `0 8px 24px ${alpha(theme.palette.primary.dark, 0.3)}`
             }
-          }}>
+          })}>
             <CardContent>
               <SupervisorAccount sx={{ fontSize: 36, mb: 1, opacity: 0.9 }} />
               <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -330,16 +430,16 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{
-            background: "linear-gradient(135deg, #80daeb 0%, #018da5 100%)",
+          <Card elevation={0} sx={(theme) => ({
+            background: theme.palette.primary.light,
             color: "#fff",
             borderRadius: 2.5,
             transition: "transform 0.2s",
             "&:hover": {
               transform: "translateY(-4px)",
-              boxShadow: "0 8px 24px rgba(128, 218, 235, 0.3)"
+              boxShadow: `0 8px 24px ${alpha(theme.palette.primary.light, 0.3)}`
             }
-          }}>
+          })}>
             <CardContent>
               <Person sx={{ fontSize: 36, mb: 1, opacity: 0.9 }} />
               <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -353,16 +453,16 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{
-            background: "linear-gradient(135deg, #909090 0%, #666 100%)",
+          <Card elevation={0} sx={(theme) => ({
+            background: theme.palette.grey[500],
             color: "#fff",
             borderRadius: 2.5,
             transition: "transform 0.2s",
             "&:hover": {
               transform: "translateY(-4px)",
-              boxShadow: "0 8px 24px rgba(144, 144, 144, 0.3)"
+              boxShadow: `0 8px 24px ${alpha(theme.palette.grey[500], 0.3)}`
             }
-          }}>
+          })}>
             <CardContent>
               <Group sx={{ fontSize: 36, mb: 1, opacity: 0.9 }} />
               <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -376,18 +476,39 @@ const Dashboard = () => {
         </Grid>
       </Grid>
 
+      {/* Mapa de Distribución */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
+            <CardContent>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <LocationOn sx={(theme) => ({ color: theme.palette.primary.main })} />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Mapa de Distribución de Votantes
+                </Typography>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+              <Box
+                ref={mapContainerRef}
+                sx={{ width: "100%", height: 450, borderRadius: 2, overflow: "hidden" }}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
       {/* Métricas de Rendimiento */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <EmojiEvents sx={{ color: "#018da5", fontSize: 28 }} />
+                <EmojiEvents sx={(theme) => ({ color: theme.palette.primary.main, fontSize: 28 })} />
                 <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
                   Tasa de Cumplimiento
                 </Typography>
               </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: "#018da5", mb: 1 }}>
+              <Typography variant="h3" sx={(theme) => ({ fontWeight: 700, color: theme.palette.primary.main, mb: 1 })}>
                 {metrics.tasaCumplimiento.toFixed(1)}%
               </Typography>
               <LinearProgress
@@ -404,15 +525,15 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <Speed sx={{ color: "#67ddab", fontSize: 28 }} />
+                <Speed sx={(theme) => ({ color: theme.palette.primary.dark, fontSize: 28 })} />
                 <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
                   Eficiencia Líder
                 </Typography>
               </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: "#67ddab", mb: 1 }}>
+              <Typography variant="h3" sx={(theme) => ({ fontWeight: 700, color: theme.palette.primary.dark, mb: 1 })}>
                 {metrics.promedioVotantesPorLider.toFixed(1)}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -423,15 +544,15 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <TrendingUp sx={{ color: "#80daeb", fontSize: 28 }} />
+                <TrendingUp sx={(theme) => ({ color: theme.palette.primary.light, fontSize: 28 })} />
                 <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
                   Líderes/Recomendado
                 </Typography>
               </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: "#80daeb", mb: 1 }}>
+              <Typography variant="h3" sx={(theme) => ({ fontWeight: 700, color: theme.palette.primary.light, mb: 1 })}>
                 {metrics.promedioLideresPorRecomendado.toFixed(1)}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -442,15 +563,15 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={6} md={3}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <Warning sx={{ color: "#ff9800", fontSize: 28 }} />
+                <Warning sx={(theme) => ({ color: theme.palette.warning.main, fontSize: 28 })} />
                 <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
                   En Riesgo
                 </Typography>
               </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: "#ff9800", mb: 1 }}>
+              <Typography variant="h3" sx={(theme) => ({ fontWeight: 700, color: theme.palette.warning.main, mb: 1 })}>
                 {lideresEnRiesgo.length}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -465,35 +586,35 @@ const Dashboard = () => {
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {/* Gráfico de Tendencia Mejorado */}
         <Grid item xs={12} md={8}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Timeline sx={{ color: "#018da5" }} />
+                  <Timeline sx={(theme) => ({ color: theme.palette.primary.main })} />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Tendencia de Crecimiento
                   </Typography>
                 </Box>
-                <Chip label="Últimos 6 meses" size="small" sx={{ bgcolor: "#f0f9fa", color: "#018da5" }} />
+                <Chip label="Últimos 6 meses" size="small" sx={(theme) => ({ bgcolor: theme.palette.background.subtle, color: theme.palette.primary.main })} />
               </Box>
               <Divider sx={{ mb: 3 }} />
               <ResponsiveContainer width="100%" height={350}>
                 <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#018da5" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#018da5" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor={rechartsColors.primaryMain} stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor={rechartsColors.primaryMain} stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={rechartsColors.grey300} vertical={false} />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 12, fill: "#666" }}
-                    axisLine={{ stroke: "#e0e0e0" }}
+                    tick={{ fontSize: 12, fill: rechartsColors.textSecondary }}
+                    axisLine={{ stroke: rechartsColors.grey300 }}
                   />
                   <YAxis
-                    tick={{ fontSize: 12, fill: "#666" }}
-                    axisLine={{ stroke: "#e0e0e0" }}
+                    tick={{ fontSize: 12, fill: rechartsColors.textSecondary }}
+                    axisLine={{ stroke: rechartsColors.grey300 }}
                   />
                   <Tooltip
                     contentStyle={{
@@ -505,7 +626,7 @@ const Dashboard = () => {
                   <Area
                     type="monotone"
                     dataKey="count"
-                    stroke="#018da5"
+                    stroke={rechartsColors.primaryMain}
                     strokeWidth={3}
                     fillOpacity={1}
                     fill="url(#colorCount)"
@@ -517,104 +638,12 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        {/* Top Departamentos - Donut Chart */}
-        <Grid item xs={12} md={4}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                <LocationOn sx={{ color: "#018da5" }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Top Departamentos
-                </Typography>
-              </Box>
-              <Divider sx={{ mb: 2 }} />
-              <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
-                  <defs>
-                    {distribucion.departamentos.slice(0, 5).map((entry, index) => {
-                      const colors = ['#018da5', '#67ddab', '#80daeb', '#0b9b8a', '#909090'];
-                      return (
-                        <linearGradient key={`deptGrad-${index}`} id={`deptGradient-${index}`} x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor={colors[index]} stopOpacity={0.9}/>
-                          <stop offset="100%" stopColor={colors[index]} stopOpacity={0.6}/>
-                        </linearGradient>
-                      );
-                    })}
-                  </defs>
-                  <Pie
-                    data={distribucion.departamentos.slice(0, 5)}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ nombre, percent }) => percent > 0.05 ? `${nombre.substring(0, 10)} ${(percent * 100).toFixed(0)}%` : ''}
-                    outerRadius={110}
-                    innerRadius={65}
-                    fill="#8884d8"
-                    dataKey="cantidad"
-                    paddingAngle={3}
-                  >
-                    {distribucion.departamentos.slice(0, 5).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={`url(#deptGradient-${index})`} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: "none",
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Gráficos de Distribución Territorial y Rendimiento */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        {/* Top Ciudades */}
-        <Grid item xs={12} md={6}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                <LocationOn sx={{ color: "#018da5" }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Top 10 Ciudades
-                </Typography>
-              </Box>
-              <Divider sx={{ mb: 3 }} />
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={distribucion.ciudades} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="ciudadGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="5%" stopColor="#018da5" stopOpacity={1}/>
-                      <stop offset="95%" stopColor="#67ddab" stopOpacity={0.8}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="nombre" type="category" tick={{ fontSize: 11 }} width={90} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: "none",
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
-                    }}
-                  />
-                  <Bar dataKey="cantidad" fill="url(#ciudadGradient)" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
         {/* Rendimiento de Grupos */}
-        <Grid item xs={12} md={6}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+        <Grid item xs={12} md={4}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                <Group sx={{ color: "#018da5" }} />
+                <Group sx={(theme) => ({ color: theme.palette.primary.main })} />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Rendimiento por Grupo
                 </Typography>
@@ -624,11 +653,11 @@ const Dashboard = () => {
                 <ComposedChart data={gruposPerformance} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <defs>
                     <linearGradient id="votantesGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#018da5" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="#0b9b8a" stopOpacity={0.7}/>
+                      <stop offset="5%" stopColor={rechartsColors.primaryMain} stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor={rechartsColors.primaryDark} stopOpacity={0.7}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={rechartsColors.grey300} vertical={false} />
                   <XAxis dataKey="nombre" tick={{ fontSize: 10 }} angle={-15} textAnchor="end" height={80} />
                   <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
@@ -641,7 +670,7 @@ const Dashboard = () => {
                   />
                   <Legend iconType="circle" />
                   <Bar yAxisId="left" dataKey="votantes" fill="url(#votantesGrad)" radius={[8, 8, 0, 0]} name="Votantes" />
-                  <Line yAxisId="right" type="monotone" dataKey="eficiencia" stroke="#67ddab" strokeWidth={3} dot={{ r: 5 }} name="Eficiencia" />
+                  <Line yAxisId="right" type="monotone" dataKey="eficiencia" stroke={rechartsColors.primaryDark} strokeWidth={3} dot={{ r: 5 }} name="Eficiencia" />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
@@ -653,7 +682,7 @@ const Dashboard = () => {
       <Grid container spacing={3}>
         {/* Top Performers */}
         <Grid item xs={12} md={6}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
                 <EmojiEvents sx={{ color: "#FFD700" }} />
@@ -666,14 +695,14 @@ const Dashboard = () => {
                 {topLideres.map((lider, idx) => (
                   <Box key={idx} sx={{ mb: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-                      <Avatar sx={{
+                      <Avatar sx={(theme) => ({
                         width: 32,
                         height: 32,
-                        bgcolor: idx === 0 ? "#FFD700" : idx === 1 ? "#C0C0C0" : idx === 2 ? "#CD7F32" : "#e0e0e0",
-                        color: idx < 3 ? "#fff" : "#666",
+                        bgcolor: idx === 0 ? "#FFD700" : idx === 1 ? "#C0C0C0" : idx === 2 ? "#CD7F32" : theme.palette.grey[300],
+                        color: idx < 3 ? "#fff" : theme.palette.text.secondary,
                         fontSize: "0.875rem",
                         fontWeight: 700
-                      }}>
+                      })}>
                         {idx + 1}
                       </Avatar>
                       <Box sx={{ flex: 1 }}>
@@ -708,10 +737,10 @@ const Dashboard = () => {
 
         {/* Líderes en Riesgo */}
         <Grid item xs={12} md={6}>
-          <Card elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #e0e0e0" }}>
+          <Card elevation={0} sx={(theme) => ({ borderRadius: 2.5, border: `1px solid ${theme.palette.grey[300]}` })}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                <Warning sx={{ color: "#ff9800" }} />
+                <Warning sx={(theme) => ({ color: theme.palette.warning.main })} />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Líderes en Riesgo
                 </Typography>
@@ -726,12 +755,12 @@ const Dashboard = () => {
                   {lideresEnRiesgo.map((lider, idx) => (
                     <Box key={idx} sx={{ mb: 2 }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-                        <Avatar sx={{
+                        <Avatar sx={(theme) => ({
                           width: 32,
                           height: 32,
-                          bgcolor: "#ff9800",
+                          bgcolor: theme.palette.warning.main,
                           fontSize: "0.875rem"
-                        }}>
+                        })}>
                           <Warning fontSize="small" />
                         </Avatar>
                         <Box sx={{ flex: 1 }}>

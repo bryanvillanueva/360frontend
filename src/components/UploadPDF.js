@@ -59,15 +59,16 @@ const UploadPDF = () => {
                 <form onSubmit={handleSubmit}>
                     <Box
                         sx={{
-                            border: "2px dashed #1976d2",
+                            border: "2px dashed",
+                            borderColor: "primary.main",
                             borderRadius: 2,
                             padding: 3,
                             textAlign: "center",
                             cursor: "pointer",
-                            backgroundColor: "#f9f9f9",
+                            backgroundColor: "background.subtle",
                             transition: "background-color 0.2s",
                             '&:hover': {
-                                backgroundColor: "#e3f2fd",
+                                backgroundColor: "primary.light",
                             },
                         }}
                         onClick={() => document.getElementById("fileInput").click()}
