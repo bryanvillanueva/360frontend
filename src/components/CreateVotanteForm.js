@@ -113,6 +113,7 @@ const CreateVotanteForm = () => {
   // fetch inicial
   useEffect(() => {
     fetchVotantes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Resetear paginación cuando cambian los datos

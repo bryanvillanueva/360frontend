@@ -12,8 +12,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Select,
-  MenuItem,
   Collapse,
 } from "@mui/material";
 import axios from "axios";
@@ -28,7 +26,7 @@ const VotantesFiltro = () => {
   const [selectedRecommended, setSelectedRecommended] = useState(null);
   const [lideres, setLideres] = useState([]);
   const [totalVotantes, setTotalVotantes] = useState(0);
-  const [loadingLideres, setLoadingLideres] = useState(false);
+  const [loadingLideres, setLoadingLideres] = useState(false); // eslint-disable-line no-unused-vars
   const [expandedLeader, setExpandedLeader] = useState("");
   const [leaderVoters, setLeaderVoters] = useState({});
   const [loadingVotantes, setLoadingVotantes] = useState({});

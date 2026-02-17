@@ -16,10 +16,8 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  TextField,
-  InputAdornment,
 } from "@mui/material";
-import { Close, Delete, Add, Search as SearchIcon, Star } from "@mui/icons-material";
+import { Close, Delete, Add, Star } from "@mui/icons-material";
 import axios from "../../services/axiosConfig";
 import SearchLeaderModal from "./SearchLeaderModal";
 
@@ -34,6 +32,7 @@ const VotanteLeaderesModal = ({ open, onClose, votante, onSuccess }) => {
       fetchLideres();
       fetchIncidencias();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, votante]);
 
   const fetchLideres = async () => {

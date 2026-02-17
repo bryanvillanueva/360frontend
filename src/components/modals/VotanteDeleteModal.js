@@ -9,7 +9,6 @@ import {
   CircularProgress,
   TextField,
   Alert,
-  Box,
 } from "@mui/material";
 
 const VotanteDeleteModal = ({ open, onClose, votante, onDelete, loading }) => {

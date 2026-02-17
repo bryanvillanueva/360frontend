@@ -4,7 +4,6 @@ import {
   Button,
   TextField,
   Typography,
-  CircularProgress,
   Table,
   TableBody,
   TableCell,
@@ -18,7 +17,6 @@ import {
   Skeleton,
   Checkbox,
   Chip,
-  Fade,
   Grow,
   InputAdornment,
   TablePagination,
@@ -28,7 +26,6 @@ import { styled } from "@mui/material/styles";
 import {
   Edit,
   Delete,
-  Add,
   Search as SearchIcon,
   PersonAdd,
   Refresh,
@@ -136,6 +133,7 @@ const RecommendedManagement = () => {
   // Cargar recomendados al montar
   useEffect(() => {
     fetchRecomendados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Obtener recomendados
